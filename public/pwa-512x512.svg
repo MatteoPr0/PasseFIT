@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#050505"/>
+  <g transform="translate(256, 256)">
+    <!-- Dumbbell Handle -->
+    <rect x="-100" y="-15" width="200" height="30" fill="#818cf8" rx="10"/>
+    
+    <!-- Left Weights -->
+    <rect x="-140" y="-60" width="40" height="120" fill="#6366f1" rx="12"/>
+    <rect x="-180" y="-40" width="30" height="80" fill="#4f46e5" rx="10"/>
+    
+    <!-- Right Weights -->
+    <rect x="100" y="-60" width="40" height="120" fill="#6366f1" rx="12"/>
+    <rect x="150" y="-40" width="30" height="80" fill="#4f46e5" rx="10"/>
+    
+    <!-- Accent Spark/Zap -->
+    <path d="M-15 -100 L15 -100 L5 -30 L25 -30 L-15 40 L-5 -20 L-25 -20 Z" fill="#fbbf24" transform="translate(0, -20) scale(0.8)"/>
+  </g>
+</svg>
