@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@layer base {
+  :root { 
+    --bg: #000000; 
+    --surface: #131316;
+    --surface-elevated: #1C1C21;
+    --primary: #818cf8; 
+    --primary-active: #6366f1;
+    --warmup: #fbbf24; 
+  }
+
+  body { 
+    font-family: 'Plus Jakarta Sans', sans-serif; 
+    background-color: var(--bg); 
+    color: #F3F4F6; 
+    -webkit-tap-highlight-color: transparent; 
+    overflow-x: hidden; 
+  }
+
+  /* Animazioni fluide Android-like */
+  .view-animate { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  @keyframes slideUpFade { 
+    from { opacity: 0; transform: translateY(16px) scale(0.98); } 
+    to { opacity: 1; transform: translateY(0) scale(1); } 
+  }
+
+  input::-webkit-inner-spin-button, input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+  input:focus, textarea:focus { 
+    border-color: var(--primary) !important; 
+    background: #1e1e24 !important; 
+    box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.2);
+  }
+
+  .type-toggle { 
+    width: 36px; height: 36px; border-radius: 12px; font-size: 12px; font-weight: 800; 
+    display: flex; align-items: center; justify-content: center; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+    border: 1px solid rgba(255,255,255,0.15); 
+  }
+  .type-toggle.type-a { background: rgba(99, 102, 241, 0.15); color: var(--primary); border-color: rgba(129, 140, 248, 0.3); }
+  .type-toggle.type-w { background: rgba(245, 158, 11, 0.15); color: var(--warmup); border-color: rgba(251, 191, 36, 0.3); }
+
+  .check-box { 
+    width: 36px; height: 36px; border: 2px solid rgba(255,255,255,0.25); border-radius: 12px; 
+    display: flex; align-items: center; justify-content: center; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); background: var(--surface-elevated);
+  }
+  .check-box.checked { 
+    background: var(--primary-active); border-color: var(--primary-active); 
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4); transform: scale(1.05);
+  }
+
+  .auto-expand { min-height: 40px; height: auto; resize: none; overflow: hidden; display: block; line-height: 1.5; transition: height 0.15s ease; }
+  
+  /* Superfici Material You Scure */
+  .surface-card { background-color: var(--surface); border: 1px solid rgba(255,255,255,0.08); }
+}

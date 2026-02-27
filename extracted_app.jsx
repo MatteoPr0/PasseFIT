@@ -1,0 +1,1053 @@
+    
+    const { useState, useEffect, useMemo, useRef } = React;
+    const APP_VERSION = 'v1.0-passefit';
+
+    const Icon = ({ name, size = 24, className = "" }) => {
+      const spanRef = useRef(null);
+      useEffect(() => {
+        if (window.lucide && spanRef.current) {
+          window.lucide.createIcons({
+            root: spanRef.current,
+            attrs: { width: size, height: size }
+          });
+        }
+      }, [name, size, className]);
+
+      return (
+        <span 
+          ref={spanRef}
+          className={`inline-flex items-center justify-center pointer-events-none ${className}`}
+          style={{ width: size, height: size, minWidth: size, minHeight: size, flexShrink: 0 }}
+          dangerouslySetInnerHTML={{ __html: `<i data-lucide="${name}"></i>` }} 
+        />
+      );
+    };
+
+    const INITIAL_LIB = {
+        "Petto": [
+            "Panca Piana Bilanciere","Panca Inclinata Bilanciere","Panca Declinata Bilanciere",
+            "Panca Piana Manubri","Panca Inclinata Manubri","Panca Declinata Manubri",
+            "Chest Press","Chest Press Inclinata","Chest Press Convergente",
+            "Croci Manubri","Croci Panca Inclinata","Croci ai Cavi (Basso-Alto)","Croci ai Cavi (Alto-Basso)",
+            "Pec Deck","Dips (Focus Petto)","Push-up","Push-up piedi rialzati",
+            "Pullover Manubrio","Pullover Cavo Alto","Squeeze Press"
+        ],
+        "Dorso": [
+            "Trazioni Wide","Trazioni Presa Inversa","Trazioni Neutre",
+            "Lat Machine Wide","Lat Machine Inversa","Lat Machine Neutra",
+            "Lat Machine Braccia Tese","Pulley Basso","Pulley Largo","Row Convergente",
+            "Rematore Bilanciere","Rematore Manubrio","Rematore T-Bar","Seal Row",
+            "Chest Supported Row","Pulldown Unilaterale","Stacchi da Terra","Rack Pull",
+            "Pull-over Cavo Alto","Facepull (Schiena)"
+        ],
+        "Gambe": [
+            "Squat","Front Squat","Hack Squat",
+            "Leg Press 45°","Leg Press Orizzontale","Leg Press Singola",
+            "Affondi Bulgari","Affondi in Camminata","Step-up",
+            "Stacco Rumeno (RDL)","Stacco Gambe Tese","Stacco Sumò",
+            "Hip Thrust","Glute Bridge",
+            "Leg Extension","Leg Curl","Leg Curl Seduto","Leg Curl Sdraiato",
+            "Calf Raise In Piedi","Calf Raise Seduto","Abductor Machine","Adductor Machine"
+        ],
+        "Spalle": [
+            "Military Press","Overhead Press Manubri","Lento Avanti Seduto","Arnold Press","Shoulder Press Machine",
+            "Alzate Laterali","Alzate Laterali ai Cavi","Alzate Laterali Machine","Alzate Frontali","Alzate a 90°",
+            "Reverse Pec Deck","Facepull","Scrollate (Shrugs)","Upright Row (Leggero)",
+            "Y-Raise","Cuban Press (Leggero)","Landmine Press","Alzate Laterali Inclinato",
+            "Cable Lateral Lean","Seated DB Press"
+        ],
+        "Bicipiti": [
+            "Curl Bilanciere","Curl Bilanciere EZ","Curl Alternato","Curl Martello","Curl Inclinata",
+            "Curl alla Scott","Curl Concentrato","Curl ai Cavi","Curl ai Cavi Unilaterale","Spider Curl",
+            "Curl Presa Inversa","Zottman Curl","Curl 21","Curl su Panca 45°","Curl Machine",
+            "Hammer Rope Cavo","Curl TRX","Chin-up (Bicipiti)","Curl Manubri Seduto","Curl Static Hold"
+        ],
+        "Tricipiti": [
+            "Pushdown","Pushdown Corda","Pushdown Barra","French Press","French Press EZ",
+            "Estensioni Dietro Nuca","Estensioni Cavo Alto","Kickback Manubrio","Skull Crusher",
+            "Panca Stretta","Dips Panchetta","Dips Parallele (Tricipiti)","JM Press (Leggero)",
+            "Estensioni Manubrio Unilaterale","Overhead Rope Extension","Close Grip Push-up","Diamond Push-up",
+            "Cable Kickback","Triceps Machine","Tate Press"
+        ],
+        "Addominali": [
+            "Crunch","Crunch ai Cavi","Crunch su Fitball","Leg Raise","Leg Raise Sospesi",
+            "Reverse Crunch","Plank","Side Plank","Russian Twist","Bicycle Crunch",
+            "Dead Bug","Hollow Hold","Ab Wheel","Pallof Press","Woodchopper Cavo",
+            "Mountain Climber","Sit-up","V-up","Toe Touch","Cable Crunch Unilaterale"
+        ]
+    };
+
+    const toNum = (x) => {
+      if (x === null || x === undefined || x === '') return NaN;
+      const n = Number(String(x).replace(',', '.'));
+      return Number.isFinite(n) ? n : NaN;
+    };
+
+    const genId = () => {
+      try { if (crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID(); } catch (e) {}
+      return 'w_' + Date.now() + '_' + Math.random().toString(16).slice(2);
+    };
+
+    const deepClone = (obj) => {
+      if (typeof structuredClone === 'function') return structuredClone(obj);
+      return JSON.parse(JSON.stringify(obj));
+    };
+
+    const EtherInput = ({ initialValue, onCommit, ghost, className = "" }) => {
+      const [localVal, setLocalVal] = useState(initialValue || '');
+      useEffect(() => { setLocalVal(initialValue || ''); }, [initialValue]);
+      return (
+        <input
+          type="number" inputMode="decimal" value={localVal} placeholder={ghost || '--'}
+          onBlur={() => onCommit(localVal)}
+          onChange={(e) => setLocalVal(e.target.value)}
+          className={`${className} bg-[#1C1C21] border border-white/[0.08] rounded-2xl py-3 text-center text-[15px] font-bold text-white outline-none w-full transition-all placeholder:text-gray-600`}
+        />
+      );
+    };
+
+    const NoteArea = ({ initialValue, onCommit, ghost, className = "" }) => {
+      const [localVal, setLocalVal] = useState(initialValue || '');
+      const textareaRef = useRef(null);
+      useEffect(() => { setLocalVal(initialValue || ''); }, [initialValue]);
+      
+      const adjustHeight = () => {
+          const el = textareaRef.current;
+          if (!el) return;
+          if (!localVal || localVal.trim().length === 0) {
+              el.style.height = '40px';
+              return;
+          }
+          el.style.height = 'auto';
+          el.style.height = Math.min(el.scrollHeight, 180) + 'px';
+      };
+      useEffect(() => { adjustHeight(); }, [localVal]);
+      
+      return (
+        <textarea
+          ref={textareaRef} rows="1" value={localVal} placeholder={ghost || "..."}
+          onBlur={() => onCommit(localVal)}
+          onChange={(e) => setLocalVal(e.target.value)}
+          className={`${className} auto-expand bg-[#1C1C21] border border-white/[0.08] rounded-2xl px-4 py-3 text-[13px] font-medium text-white outline-none w-full transition-all placeholder:text-gray-500`}
+        />
+      );
+    };
+
+    const MiniBarChart = ({ data, height = 64 }) => {
+      const values = (data || []).map(d => Number(d.value || 0));
+      const max = Math.max(0, ...values);
+      const hasData = max > 0;
+      const w = 280, h = 52, padX = 8, padY = 6, baselineY = h - padY;
+      const n = Math.max(1, values.length);
+      const barW = (w - padX * 2) / n;
+      
+      return (
+        <svg className="w-full" style={{ height }} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+          <line x1={padX} y1={baselineY} x2={w - padX} y2={baselineY} stroke="rgba(255,255,255,0.15)" strokeWidth="2" strokeLinecap="round" />
+          {!hasData ? (
+            <text x={w/2} y={baselineY-10} textAnchor="middle" fill="#6B7280" fontSize="12" fontWeight="600">Nessun dato</text>
+          ) : (
+            values.map((v, i) => {
+              const barH = Math.max(4, (v / max) * (baselineY - padY));
+              const x = padX + i * barW + barW * 0.15;
+              const y = baselineY - barH;
+              const bw = barW * 0.7;
+              const r = Math.min(8, bw / 2);
+              return <rect key={i} x={x} y={y} width={bw} height={barH} rx={r} ry={r} fill="#818cf8" />;
+            })
+          )}
+        </svg>
+      );
+    };
+
+    const fmtWeekday = (d) => {
+        try { return new Intl.DateTimeFormat('it-IT', { weekday: 'short' }).format(d).replace('.', '').slice(0, 3); } 
+        catch { return ['dom','lun','mar','mer','gio','ven','sab'][d.getDay()]; }
+    };
+
+    function App() {
+      const [activeTab, setActiveTab] = useState('home');
+      const [history, setHistory] = useState([]);
+      const [routines, setRoutines] = useState([]);
+      const [customs, setCustoms] = useState({});
+      const [activeWorkout, setActiveWorkout] = useState(null);
+      const [isDataLoaded, setIsDataLoaded] = useState(false);
+      
+      const fileInputRef = useRef(null);
+
+      useEffect(() => {
+        const loadAndMigrateData = async () => {
+          try {
+            let storedHistory = await idbKeyval.get('af_v57_h');
+            let storedRoutines = await idbKeyval.get('af_v57_r');
+            let storedCustoms = await idbKeyval.get('af_v57_c');
+            let storedActiveWorkout = await idbKeyval.get('af_v57_aw');
+
+            if (storedHistory === undefined) {
+              storedHistory = JSON.parse(localStorage.getItem('af_v57_h') || '[]');
+              if (storedHistory.length > 0) await idbKeyval.set('af_v57_h', storedHistory);
+            }
+            if (storedRoutines === undefined) {
+              storedRoutines = JSON.parse(localStorage.getItem('af_v57_r') || '[]');
+              if (storedRoutines.length > 0) await idbKeyval.set('af_v57_r', storedRoutines);
+            }
+            if (storedCustoms === undefined) {
+              storedCustoms = JSON.parse(localStorage.getItem('af_v57_c') || '{}');
+              if (Object.keys(storedCustoms).length > 0) await idbKeyval.set('af_v57_c', storedCustoms);
+            }
+            if (storedActiveWorkout === undefined) {
+              storedActiveWorkout = JSON.parse(localStorage.getItem('af_v57_aw') || 'null');
+              if (storedActiveWorkout) await idbKeyval.set('af_v57_aw', storedActiveWorkout);
+            }
+
+            let historyToSet = storedHistory || [];
+            let changed = false;
+            const normalizedHistory = historyToSet.map(w => {
+              if (w && w.id) return w;
+              changed = true;
+              return { ...w, id: genId() };
+            });
+            if (changed) { historyToSet = normalizedHistory; await idbKeyval.set('af_v57_h', historyToSet); }
+
+            setHistory(historyToSet);
+            setRoutines(storedRoutines || []);
+            setCustoms(storedCustoms || {});
+            setActiveWorkout(storedActiveWorkout || null);
+          } catch (error) { console.error("Errore IndexedDB:", error); } 
+          finally { setIsDataLoaded(true); }
+        };
+        loadAndMigrateData();
+      }, []);
+
+      const [isTimerOpen, setIsTimerOpen] = useState(false);
+      const [timerVal, setTimerVal] = useState(0);
+      const timerEndTimeRef = useRef(null);
+      const [modal, setModal] = useState({ type: null, mode: null, routineExs: [], confirmAction: null });
+      const [searchQuery, setSearchQuery] = useState('');
+      const [customForm, setCustomForm] = useState({ open:false, name:'', cat:'Petto' });
+      const [expandedCats, setExpandedCats] = useState({});
+      const [sessionDuration, setSessionDuration] = useState("00:00:00");
+      
+      const mergedLibrary = useMemo(() => {
+          const out = {};
+          Object.keys(INITIAL_LIB).forEach(cat => { out[cat] = [...(INITIAL_LIB[cat] || []), ...(customs?.[cat] || [])]; });
+          Object.keys(customs || {}).forEach(cat => { if (!out[cat]) out[cat] = [...(customs?.[cat] || [])]; });
+          Object.keys(out).forEach(cat => {
+              const seen = new Set();
+              out[cat] = out[cat].filter(x => {
+                  const k = (x || "").trim().toLowerCase();
+                  if (!k || seen.has(k)) return false;
+                  seen.add(k); return true;
+              }).sort((a,b)=>a.localeCompare(b,'it',{sensitivity:'base'}));
+          });
+          return out;
+      }, [customs]);
+
+      const muscleMap = useMemo(() => {
+          const map = {};
+          Object.entries(mergedLibrary).forEach(([cat, exs]) => {
+              exs.forEach(ex => {
+                  map[ex.toLowerCase()] = cat;
+              });
+          });
+          return map;
+      }, [mergedLibrary]);
+
+      const exCardRefs = useRef([]);
+      const dragRef = useRef({ active:false, from:-1, over:-1, pointerId:null });
+      const [dragUI, setDragUI] = useState({ active:false, from:-1, over:-1 });
+      
+      const computeOverIndex = (clientY) => {
+          const refs = exCardRefs.current || [];
+          let over = -1;
+          for (let i = 0; i < refs.length; i++) {
+              const el = refs[i];
+              if (!el) continue;
+              const r = el.getBoundingClientRect();
+              if (clientY < r.top + (r.height / 2)) { over = i; break; }
+              over = i;
+          }
+          return over;
+      };
+
+      const reorderExercises = (fromIdx, toIdx) => {
+          if (!activeWorkout || !activeWorkout.exercises) return;
+          const n = activeWorkout.exercises.slice();
+          if (fromIdx < 0 || toIdx < 0 || fromIdx >= n.length || toIdx >= n.length || fromIdx === toIdx) return;
+          const moved = n.splice(fromIdx, 1)[0];
+          n.splice(toIdx, 0, moved);
+          setActiveWorkout({ ...activeWorkout, exercises: n });
+      };
+
+      const dragStart = (fromIdx, pointerId, clientY) => {
+          dragRef.current = { active:true, from:fromIdx, over:fromIdx, pointerId };
+          setDragUI({ active:true, from:fromIdx, over:fromIdx });
+          if (navigator && navigator.vibrate) navigator.vibrate(10);
+      };
+
+      const dragMove = (clientY) => {
+          if (!dragRef.current.active) return;
+          const over = computeOverIndex(clientY);
+          if (over >= 0 && over !== dragRef.current.over) {
+              dragRef.current.over = over;
+              setDragUI({ active:true, from:dragRef.current.from, over });
+          }
+      };
+
+      const dragEnd = () => {
+          if (!dragRef.current.active) return;
+          const {from, over} = dragRef.current;
+          dragRef.current = { active:false, from:-1, over:-1, pointerId:null };
+          setDragUI({ active:false, from:-1, over:-1 });
+          reorderExercises(from, over);
+      };
+
+      const onDragPointerDown = (fromIdx) => (e) => {
+          try { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); } catch(err) {}
+          document.body.classList.add('select-none');
+          dragStart(fromIdx, e.pointerId, e.clientY);
+          window.addEventListener('pointermove', onDragPointerMove, { passive: false });
+          window.addEventListener('pointerup', onDragPointerUp, { passive: false });
+          window.addEventListener('pointercancel', onDragPointerUp, { passive: false });
+      };
+      const onDragPointerMove = (e) => {
+          if (!dragRef.current.active || (dragRef.current.pointerId !== null && e.pointerId !== dragRef.current.pointerId)) return;
+          try { e.preventDefault(); } catch(err) {}
+          dragMove(e.clientY);
+      };
+      const onDragPointerUp = (e) => {
+          if (!dragRef.current.active || (dragRef.current.pointerId !== null && e.pointerId !== dragRef.current.pointerId)) return;
+          try { e.preventDefault(); } catch(err) {}
+          document.body.classList.remove('select-none');
+          window.removeEventListener('pointermove', onDragPointerMove);
+          window.removeEventListener('pointerup', onDragPointerUp);
+          window.removeEventListener('pointercancel', onDragPointerUp);
+          try { e.currentTarget.releasePointerCapture(e.pointerId); } catch(err) {}
+          dragEnd();
+      };
+
+      useEffect(() => {
+        if (!isDataLoaded) return;
+        idbKeyval.set('af_v57_h', history);
+        idbKeyval.set('af_v57_r', routines);
+        idbKeyval.set('af_v57_c', customs);
+        idbKeyval.set('af_v57_aw', activeWorkout);
+      }, [history, routines, customs, activeWorkout, isDataLoaded]);
+
+      const lastByExercise = useMemo(() => {
+        const map = new Map();
+        for (let i = history.length - 1; i >= 0; i--) {
+          const h = history[i];
+          for (const ex of (h.exercises || [])) {
+            const key = (ex.name || '').trim().toLowerCase();
+            if (key && !map.has(key)) map.set(key, ex);
+          }
+        }
+        return map;
+      }, [history]);
+
+      const getGhostSet = (exName, setIdx) => lastByExercise.get((exName || '').trim().toLowerCase())?.sets?.[setIdx] || null;
+      const getGhostExerciseNotes = (exName) => lastByExercise.get((exName || '').trim().toLowerCase())?.notes || null;
+
+      useEffect(() => {
+        const interval = setInterval(() => {
+          if (activeWorkout && activeWorkout.startTime) {
+            const diff = Date.now() - activeWorkout.startTime;
+            const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
+            const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+            const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+            setSessionDuration(`${h}:${m}:${s}`);
+          }
+          if (isTimerOpen && timerEndTimeRef.current) {
+            const remaining = Math.max(0, Math.ceil((timerEndTimeRef.current - Date.now()) / 1000));
+            setTimerVal(remaining);
+            if (remaining <= 0) { setIsTimerOpen(false); if (navigator.vibrate) navigator.vibrate([200, 100, 200]); }
+          }
+        }, 1000);
+        return () => clearInterval(interval);
+      }, [activeWorkout?.startTime, isTimerOpen]);
+
+      const acwr = useMemo(() => {
+        if (!history.length) return "1.00";
+        const daily = new Map();
+        for (const h of history) {
+          const day = (h.date || '').slice(0, 10);
+          if (!day) continue;
+          daily.set(day, (daily.get(day) || 0) + (typeof h.vol === 'number' ? h.vol : 0));
+        }
+        const days = [...daily.keys()].sort();
+        const lastDay = days[days.length - 1];
+        if (!lastDay) return "1.00";
+        const lastTs = Date.parse(lastDay + "T00:00:00Z");
+        const sumWindow = (lenDays) => {
+          let s = 0;
+          for (let i = 0; i < lenDays; i++) s += daily.get(new Date(lastTs - i * 86400000).toISOString().slice(0, 10)) || 0;
+          return s;
+        };
+        const ratio = sumWindow(7) / ((sumWindow(28) / 4) || 1);
+        return Number.isFinite(ratio) ? ratio.toFixed(2) : "1.00";
+      }, [history]);
+
+      const trend = useMemo(() => {
+          const keyLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+          const now = new Date();
+          const byDay = {};
+          for (const h of history) {
+              const k = keyLocal(new Date(h.date || h.startTime || Date.now()));
+              if (!byDay[k]) byDay[k] = { vol: 0, count: 0 };
+              byDay[k].vol += Number(h.vol || 0);
+              byDay[k].count += 1;
+          }
+          const out = [];
+          for (let i = 13; i >= 0; i--) {
+              const d = new Date(now); d.setHours(0,0,0,0); d.setDate(d.getDate() - i);
+              const k = keyLocal(d);
+              out.push({ date: d, key: k, label: fmtWeekday(d), value: byDay[k]?.vol || 0, count: byDay[k]?.count || 0 });
+          }
+          let streak = 0;
+          for (let i = out.length - 1; i >= 0; i--) { if (out[i].count > 0) streak++; else break; }
+          return { last14: out, totalSessions7: out.slice(7).reduce((a, c) => a + c.count, 0), streak };
+      }, [history]);
+
+      const startWorkout = (r = null) => {
+        setActiveWorkout({
+          id: genId(), name: r ? r.name : "Sessione Libera", date: new Date().toISOString(), startTime: Date.now(),
+          exercises: r ? (r.exs || []).map(e => ({ name: (typeof e === 'string' ? e : e?.name || ''), rest: 90, notes: "", sets: [{ kg: '', reps: '', note: '', w: false, d: false }] })) : []
+        });
+        setActiveTab('workout');
+        if (!r) setModal({ type: 'exercise-select', mode: 'active', routineExs: [] });
+      };
+
+      const safeAddExerciseToActive = (name) => setActiveWorkout(prev => {
+        const base = prev || { id: genId(), name: "Sessione Libera", date: new Date().toISOString(), startTime: Date.now(), exercises: [] };
+        return { ...base, exercises: [...(base.exercises || []), { name, rest: 90, notes: "", sets: [{ kg:'', reps:'', note:'', w:false, d:false }] }] };
+      });
+
+      const safeAddExerciseToRoutine = (rId, name) => setRoutines(prev => (prev || []).map(r => {
+        if(String(r.id) !== String(rId)) return r;
+        const exs = Array.isArray(r.exs) ? r.exs : [];
+        if(exs.some(n => String(n).toLowerCase() === String(name).toLowerCase())) return r; 
+        return { ...r, exs: [...exs, name] };
+      }));
+
+      const handleSetDone = (exI, sI) => {
+        if (!activeWorkout) return;
+        const n = deepClone(activeWorkout.exercises);
+        const s = n[exI].sets[sI];
+        s.d = !s.d;
+        if (s.d) {
+          const r = parseInt(n[exI].rest) || 90;
+          timerEndTimeRef.current = Date.now() + (r * 1000);
+          setTimerVal(r);
+          setIsTimerOpen(true);
+        }
+        setActiveWorkout({ ...activeWorkout, exercises: n });
+      };
+
+      const updateSetData = (exI, sI, field, val) => {
+        if (!activeWorkout) return;
+        const n = deepClone(activeWorkout.exercises);
+        n[exI].sets[sI][field] = val;
+        setActiveWorkout({ ...activeWorkout, exercises: n });
+      };
+
+      const removeSet = (exI, sI) => {
+        if (!activeWorkout) return;
+        const n = deepClone(activeWorkout.exercises);
+        const sets = n[exI].sets || [];
+        if (sets.length <= 1) {
+          n[exI].sets = [{ kg: '', reps: '', note: '', w: false, d: false }];
+        } else {
+          sets.splice(sI, 1);
+          n[exI].sets = sets;
+        }
+        setActiveWorkout({ ...activeWorkout, exercises: n });
+      };
+
+      const updateExNote = (exI, val) => {
+        if (!activeWorkout) return;
+        const n = deepClone(activeWorkout.exercises);
+        n[exI].notes = val;
+        setActiveWorkout({ ...activeWorkout, exercises: n });
+      };
+
+      const renameActiveWorkout = (newName) => {
+        const name = (newName || '').trim();
+        if (!name) return;
+        setActiveWorkout(prev => prev ? ({ ...prev, name }) : prev);
+      };
+
+      const renameHistoryWorkout = (workoutId, newName) => {
+        const name = (newName || '').trim();
+        if (!name) return;
+        setHistory(prev => (prev || []).map(h => (h.id === workoutId ? { ...h, name } : h)));
+      };
+
+      const addCustomExercise = (cat, name) => {
+          const clean = (name || '').trim();
+          if (!clean) return false;
+          const group = (cat || 'Altro').trim();
+          const base = (INITIAL_LIB[group] || []);
+          const existing = new Set([...(customs[group] || []), ...base].map(s => s.toLowerCase()));
+          if (existing.has(clean.toLowerCase())) return false;
+          setCustoms(prev => {
+              const next = { ...(prev || {}) };
+              const arr = Array.isArray(next[group]) ? [...next[group]] : [];
+              arr.push(clean);
+              arr.sort((a,b)=>a.localeCompare(b,'it',{sensitivity:'base'}));
+              next[group] = arr;
+              return next;
+          });
+          return true;
+      };
+
+      const finishWorkout = () => {
+        if (!activeWorkout) return;
+        let vol = 0;
+        (activeWorkout.exercises || []).forEach(ex => (ex.sets || []).forEach(s => {
+          if (!s.w && Number.isFinite(toNum(s.kg)) && Number.isFinite(toNum(s.reps)) && toNum(s.reps) > 0) vol += (toNum(s.kg) * toNum(s.reps));
+        }));
+        setHistory([...history, { ...activeWorkout, id: activeWorkout.id || genId(), vol, duration: sessionDuration, date: new Date().toISOString() }]);
+        setActiveWorkout(null); setActiveTab('home');
+      };
+
+      if (!isDataLoaded) {
+        return (
+          <div className="min-h-screen bg-[#000000] flex flex-col items-center justify-center p-6 space-y-4">
+            <Icon name="loader-2" size={32} className="text-indigo-500 animate-spin" />
+            <div className="text-gray-400 text-xs font-bold uppercase tracking-[0.2em] animate-pulse">Sincronizzazione DB...</div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="max-w-md mx-auto min-h-screen px-4 pb-36">
+          <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+            <div className="absolute top-[-10%] left-[-15%] w-[130vw] h-[130vw] bg-indigo-600/[0.08] rounded-full blur-[150px]" />
+          </div>
+          
+          <div className="relative z-10 pt-8">
+            {activeTab === 'home' && (
+              <div className="space-y-6 view-animate">
+                <header className="flex justify-between items-center px-2">
+                  <div>
+                    <p className="text-indigo-400 text-[10px] font-extrabold uppercase tracking-[0.3em]">{APP_VERSION}</p>
+                    <h1 className="text-[2.5rem] font-black tracking-tight mt-1 text-white">PasseFIT</h1>
+                  </div>
+                  <div className="w-14 h-14 surface-card flex items-center justify-center rounded-[1.2rem] shadow-2xl">
+                    <Icon name="dumbbell" size={26} className="text-indigo-400" />
+                  </div>
+                </header>
+
+                <div className="grid grid-cols-2 gap-3 text-left">
+                  <div className="surface-card p-5 rounded-[2rem] shadow-lg flex flex-col justify-center">
+                    <p className="text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-widest">ACWR (7/28)</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[2rem] font-black tabular-nums leading-none">{acwr}</span>
+                      <div className={`w-2.5 h-2.5 rounded-full ${parseFloat(acwr) > 1.5 ? 'bg-red-500 animate-pulse' : 'bg-green-500'}`} />
+                    </div>
+                  </div>
+                  <div className="surface-card p-5 rounded-[2rem] shadow-lg flex flex-col justify-center">
+                    <p className="text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-widest truncate">Last Vol</p>
+                    <span className="text-[2rem] font-black tabular-nums leading-none truncate">{history[history.length-1]?.vol || 0}</span>
+                  </div>
+                
+                  <div className="col-span-2 surface-card p-6 rounded-[2.2rem] shadow-xl">
+                      <div className="flex items-start justify-between gap-4">
+                          <div>
+                              <p className="text-[10px] font-extrabold text-indigo-400 uppercase tracking-widest">Attività</p>
+                              <p className="text-gray-300 text-[13px] font-bold mt-1">Ultimi 14 giorni</p>
+                          </div>
+                          <div className="flex items-center gap-4 flex-shrink-0">
+                              <div className="text-right">
+                                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Streak</p>
+                                  <p className="text-2xl font-black tabular-nums leading-none">{trend.streak}</p>
+                              </div>
+                              <div className="w-px h-8 bg-white/10" />
+                              <div className="text-right">
+                                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">7G</p>
+                                  <p className="text-2xl font-black tabular-nums leading-none">{trend.totalSessions7} <span className="text-gray-500 text-[10px] font-black uppercase">all.</span></p>
+                              </div>
+                          </div>
+                      </div>
+                      <div className="mt-6">
+                        <MiniBarChart data={trend.last14.map(d => ({ value: d.value, label: fmtWeekday(d.date) }))} height={72} />
+                        <div className="mt-3 grid grid-cols-[repeat(14,minmax(0,1fr))] gap-x-1 text-[10px] text-gray-500 font-bold uppercase tracking-wider leading-none">
+                          {trend.last14.map((b, i) => ( <div key={i} className="text-center"><span className={i % 2 === 0 ? "" : "opacity-0"}>{b.label}</span></div> ))}
+                        </div>
+                      </div>
+                  </div>
+                </div>
+
+                <button onClick={() => activeWorkout ? setActiveTab('workout') : startWorkout()} className="w-full bg-indigo-500 text-white py-6 rounded-[2rem] flex items-center justify-center gap-3 font-black text-xl shadow-[0_10px_30px_rgba(99,102,241,0.3)] active:scale-[0.98] transition-all">
+                  <Icon name={activeWorkout ? "play-circle" : "zap"} size={26} /> {activeWorkout ? 'Riprendi Sessione' : 'Inizia Allenamento'}
+                </button>
+
+                <div className="space-y-3 pt-4 text-left">
+                  <h3 className="text-gray-400 font-extrabold text-[11px] uppercase tracking-[0.2em] px-3 mb-4">Cronologia Recente</h3>
+                  {history.slice().reverse().map((h, i) => (
+                    <div key={h.id || i} onClick={() => setModal({type:'history', data:h})} className="surface-card p-5 rounded-[1.8rem] flex justify-between items-center active:bg-white/5 transition-all cursor-pointer">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-bold text-[15px] text-gray-100 truncate pr-2">{h.name}</p>
+                        <p className="text-[11px] font-bold text-gray-500 mt-1 uppercase tracking-wider">{h.vol} KG • {h.duration || '--'}</p>
+                      </div>
+                      <Icon name="chevron-right" className="text-gray-600" size={20} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'workout' && activeWorkout && (
+              <div className="space-y-6 view-animate pb-6">
+                <header className="flex justify-between items-center gap-3 px-1">
+                  <div className="w-1/4">
+                    <button onClick={() => setModal({type:'confirm', confirmAction: () => {setActiveWorkout(null); setActiveTab('home');}, data: "Annullare sessione?"})} className="text-gray-400 text-[11px] font-extrabold uppercase bg-white/5 px-4 py-2.5 rounded-full border border-white/10 active:bg-white/10">Esci</button>
+                  </div>
+                  <div className="flex-1 text-center min-w-0">
+                    <div onClick={() => setModal({type:'rename', mode:'active', data:{ current: activeWorkout?.name || '' }})} className="inline-flex items-center justify-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full mb-2 active:bg-white/10 cursor-pointer">
+                        <Icon name="pencil" size={12} className="text-indigo-400" />
+                        <span className="text-[10px] font-extrabold text-indigo-300 uppercase tracking-widest truncate max-w-[120px]">{activeWorkout.name}</span>
+                    </div>
+                    <p className="text-[2.2rem] font-black tabular-nums text-white leading-none">{sessionDuration}</p>
+                  </div>
+                  <div className="w-1/4 flex justify-end">
+                    <button onClick={() => setModal({type:'confirm', confirmAction: finishWorkout, data: "Concludere allenamento?"})} className="bg-indigo-500 px-5 py-2.5 rounded-full text-[11px] font-black text-white shadow-lg shadow-indigo-500/30 whitespace-nowrap">Fine</button>
+                  </div>
+                </header>
+
+                <div className="space-y-5 text-left">
+                  {activeWorkout.exercises.map((ex, exI) => {
+                    return (
+                      <div key={exI} ref={(el)=>{exCardRefs.current[exI]=el;}} className={`surface-card p-6 rounded-[2.2rem] space-y-5 shadow-lg ${dragUI.active && dragUI.over===exI ? "ring-2 ring-indigo-500" : ""}`}>
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="flex-1 min-w-0">
+                            <h3 onClick={() => { const nn = prompt("Rinomina esercizio", ex.name); if(nn){ const n=[...activeWorkout.exercises]; n[exI].name = nn.trim(); setActiveWorkout({...activeWorkout, exercises:n}); } }} className="text-[1.3rem] font-black uppercase text-white leading-tight break-words active:text-indigo-300 cursor-pointer">{ex.name}</h3>
+                            <div className="flex items-center gap-2 mt-2 bg-black/40 inline-flex px-3 py-1.5 rounded-lg border border-white/5">
+                              <Icon name="clock" size={12} className="text-indigo-400" />
+                              <input type="number" value={ex.rest} onChange={(e) => { const n = deepClone(activeWorkout.exercises); n[exI].rest = e.target.value; setActiveWorkout({...activeWorkout, exercises: n}); }} className="w-8 bg-transparent text-[11px] font-black text-white outline-none text-center" />
+                              <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">sec rest</span>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-center gap-2">
+                            <button onClick={() => { const n = activeWorkout.exercises.filter((_, i) => i !== exI); setActiveWorkout({...activeWorkout, exercises: n}); }} className="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 active:bg-red-500/30 shrink-0"><Icon name="trash-2" size={18}/></button>
+                            <button onPointerDown={onDragPointerDown(exI)} className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 touch-none active:bg-white/10 cursor-grab shrink-0"><Icon name="grip-horizontal" size={18}/></button>
+                          </div>
+                        </div>
+                        
+                        <NoteArea initialValue={ex.notes} onCommit={(v) => updateExNote(exI, v)} ghost={getGhostExerciseNotes(ex.name) || "Note (es. Focus eccentrica)..."} />
+                        
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-12 gap-2 text-[10px] font-extrabold text-gray-500 text-center uppercase tracking-widest px-1">
+                            <span className="col-span-1">S</span>
+                            <span className="col-span-3">KG</span>
+                            <span className="col-span-2">Rip</span>
+                            <span className="col-span-4 text-left pl-2">Note</span>
+                            <span className="col-span-2">Esito</span>
+                          </div>
+                          {ex.sets.map((s, sI) => {
+                            const setGhost = getGhostSet(ex.name, sI);
+                            return (
+                              <div key={sI} className="grid grid-cols-12 gap-2 items-center">
+                                <div className="col-span-1 flex flex-col items-center gap-1">
+                                    <span className="text-[14px] font-black text-indigo-400">{sI+1}</span>
+                                    <button onClick={() => { const n = deepClone(activeWorkout.exercises); n[exI].sets[sI].w = !n[exI].sets[sI].w; setActiveWorkout({...activeWorkout, exercises: n}); }} className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${s.w ? 'bg-amber-500/20 text-amber-400' : 'bg-gray-800 text-gray-500'}`}>{s.w ? 'W' : 'A'}</button>
+                                </div>
+                                <div className="col-span-3"><EtherInput ghost={setGhost?.kg} initialValue={s.kg} onCommit={(v) => updateSetData(exI, sI, 'kg', v)} /></div>
+                                <div className="col-span-2"><EtherInput ghost={setGhost?.reps} initialValue={s.reps} onCommit={(v) => updateSetData(exI, sI, 'reps', v)} /></div>
+                                <div className="col-span-4"><NoteArea ghost={setGhost?.note} initialValue={s.note} onCommit={(v) => updateSetData(exI, sI, 'note', v)} className="!text-[11px] !py-2.5" /></div>
+                                <div className="col-span-2 flex items-center justify-between gap-1">
+                                    <button onClick={() => handleSetDone(exI, sI)} className={`check-box flex-1 !h-10 ${s.d ? 'checked' : ''}`}><Icon name="check" size={18} className={s.d ? 'text-white' : 'opacity-0'} /></button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={() => { const n = deepClone(activeWorkout.exercises); const last = n[exI].sets[n[exI].sets.length-1] || {kg:'', reps:'', w:false}; n[exI].sets.push({kg: last.kg, reps: '', note: '', w: last.w, d:false}); setActiveWorkout({...activeWorkout, exercises: n}); }} className="flex-1 py-3.5 bg-white/5 rounded-2xl text-[11px] font-extrabold uppercase border border-white/10 active:bg-white/10 text-gray-300 tracking-wider">+ Serie</button>
+                            <button onClick={() => removeSet(exI, ex.sets.length-1)} className="w-14 py-3.5 bg-white/5 rounded-2xl text-[11px] font-extrabold border border-white/10 active:bg-red-500/20 text-gray-400 flex items-center justify-center">-</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <button onClick={() => setModal({ type: 'exercise-select', mode: 'active', routineExs: [] })} className="w-full bg-[#131316] border-2 border-dashed border-white/15 py-12 flex flex-col items-center gap-4 text-gray-400 rounded-[2.5rem] active:bg-white/5 transition-all">
+                  <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center"><Icon name="plus" size={32} className="text-indigo-400" /></div>
+                  <span className="font-bold text-[13px] uppercase tracking-widest">Aggiungi Esercizio</span>
+                </button>
+              </div>
+            )}
+
+            {activeTab === 'routines' && (
+              <div className="space-y-6 pt-4 view-animate text-left">
+                <h1 className="text-[2.5rem] font-black tracking-tight text-white px-2">Schede</h1>
+                <div className="space-y-4">
+                  {routines.map((r, i) => (
+                    <div key={i} className="surface-card p-6 rounded-[2.2rem] space-y-5 shadow-lg">
+                      <div className="flex justify-between items-start gap-3">
+                          <div className="min-w-0 flex-1 pr-2">
+                              <h3 className="text-[1.3rem] font-black uppercase text-white tracking-tight mb-3 truncate">{r.name}</h3>
+                              {r.exs && r.exs.length > 0 ? (
+                                  <div className="space-y-2">
+                                      {Object.entries(
+                                          r.exs.reduce((acc, ex) => {
+                                              const safeEx = ex || '';
+                                              if(!safeEx) return acc;
+                                              const cat = muscleMap[safeEx.toLowerCase()] || 'Altro';
+                                              if (!acc[cat]) acc[cat] = [];
+                                              acc[cat].push(safeEx);
+                                              return acc;
+                                          }, {})
+                                      ).map(([cat, list]) => (
+                                          <div key={cat} className="break-words leading-snug">
+                                              <span className="text-indigo-400 uppercase text-[9px] tracking-widest font-black mr-2">{cat}</span>
+                                              <span className="text-gray-300 text-[12px] font-bold">{list.join(' • ')}</span>
+                                          </div>
+                                      ))}
+                                  </div>
+                              ) : (
+                                  <p className="text-[12px] font-bold text-gray-600">Nessun esercizio.</p>
+                              )}
+                          </div>
+                          <button onClick={() => setModal({type:'confirm', confirmAction: () => setRoutines(routines.filter((_,idx)=>idx!==i)), data: `Eliminare ${r.name}?`})} className="text-gray-500 bg-white/5 p-2.5 rounded-full shrink-0 active:bg-red-500/20 active:text-red-400 transition-colors"><Icon name="trash-2" size={18}/></button>
+                      </div>
+                      <div className="flex gap-3 pt-3">
+                        <button onClick={() => setModal({ type: 'edit-routine', data: r.id })} className="flex-1 bg-white/5 border border-white/10 py-4 rounded-full font-bold uppercase text-[11px] text-gray-300 active:bg-white/10">Modifica</button>
+                        <button onClick={() => startWorkout(r)} className="flex-1 bg-indigo-500 py-4 rounded-full font-bold uppercase text-[11px] text-white shadow-lg active:scale-[0.98]">Avvia</button>
+                      </div>
+                    </div>
+                  ))}
+                  <button onClick={() => setModal({type: 'name-routine'})} className="w-full surface-card border-dashed border-white/20 py-10 flex flex-col items-center gap-3 text-gray-400 rounded-[2.2rem] active:bg-white/5">
+                    <Icon name="plus-circle" size={32}/> 
+                    <span className="text-[12px] font-bold uppercase tracking-widest">Nuova Scheda</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'stats' && (
+              <div className="space-y-8 pt-4 view-animate pb-12 text-left">
+                <h1 className="text-[2.5rem] font-black tracking-tight text-white px-2">Dati</h1>
+                <div className="surface-card p-6 rounded-[2.2rem] space-y-6 shadow-lg">
+                  <h3 className="text-[11px] font-extrabold uppercase text-indigo-400 tracking-[0.2em]">Manutenzione</h3>
+                  <div className="space-y-3">
+                    <button onClick={() => {
+                      const data = JSON.stringify({ version: APP_VERSION, exportedAt: new Date().toISOString(), history, routines, customs }, null, 2);
+                      const blob = new Blob([data], {type: 'application/json'}); const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a'); a.href = url; a.download = `passefit_backup.json`;
+                      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+                    }} className="w-full bg-white text-black py-4 rounded-full font-bold uppercase text-[12px] flex items-center justify-center gap-3 active:scale-[0.98]"><Icon name="download" size={18} /> Backup Dati</button>
+                    
+                    <button onClick={() => fileInputRef.current.click()} className="w-full bg-white/10 text-white py-4 rounded-full font-bold uppercase text-[12px] flex items-center justify-center gap-3 active:bg-white/20"><Icon name="upload" size={18} /> Ripristina Dati</button>
+                    <input type="file" ref={fileInputRef} onChange={(ev) => {
+                      const file = ev.target.files[0]; if(!file) return;
+                      const reader = new FileReader(); reader.onload = (e) => {
+                        try {
+                          const d = JSON.parse(e.target.result);
+                          setModal({type:'confirm', confirmAction: () => {
+                              setHistory(Array.isArray(d.history) ? d.history : []);
+                              setRoutines(Array.isArray(d.routines) ? d.routines : []);
+                              setCustoms(d.customs || {});
+                          }, data: "Sovrascrivere il database attuale con il backup?"});
+                        } catch(err) { alert("File backup non valido."); } finally { ev.target.value = ''; }
+                      }; reader.readAsText(file);
+                    }} className="hidden" accept=".json" />
+                    <p className="text-[10px] font-bold uppercase text-gray-500 tracking-widest text-center pt-2">Storage Sicuro: IndexedDB</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <nav className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm z-50 transition-transform duration-500 ${activeTab === 'workout' ? 'translate-y-32 opacity-0' : ''}`}>
+            <div className="bg-[#1C1C21]/90 backdrop-blur-xl border border-white/10 p-2 rounded-full flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
+              <button onClick={() => setActiveTab('home')} className={`flex-1 flex justify-center py-3 rounded-full transition-all ${activeTab === 'home' ? 'bg-indigo-500 text-white shadow-md' : 'text-gray-500'}`}><Icon name="home" size={22} /></button>
+              <button onClick={() => setActiveTab('routines')} className={`flex-1 flex justify-center py-3 rounded-full transition-all ${activeTab === 'routines' ? 'bg-indigo-500 text-white shadow-md' : 'text-gray-500'}`}><Icon name="clipboard-list" size={22} /></button>
+              <button onClick={() => setActiveTab('stats')} className={`flex-1 flex justify-center py-3 rounded-full transition-all ${activeTab === 'stats' ? 'bg-indigo-500 text-white shadow-md' : 'text-gray-500'}`}><Icon name="database" size={22} /></button>
+            </div>
+          </nav>
+
+          {/* EDITOR SCHEDA */}
+          {modal && modal.type === 'edit-routine' && (
+            (() => {
+              const r = (routines || []).find(x => String(x.id) === String(modal.data));
+              if(!r) return (
+                <div className="fixed inset-0 z-[2000] bg-[#000000]/95 backdrop-blur-xl p-5 flex items-center justify-center">
+                    <span className="text-gray-500 font-bold text-xs uppercase animate-pulse">Caricamento scheda...</span>
+                </div>
+              );
+              return (
+                <div className="fixed inset-0 z-[2000] bg-[#000000]/95 backdrop-blur-xl p-5 flex flex-col animate-in fade-in">
+                  <div className="flex justify-between items-center mb-6 pt-4 text-left">
+                    <div>
+                      <p className="text-[10px] font-extrabold uppercase text-indigo-400 tracking-widest">Configura Scheda</p>
+                      <h2 className="text-[2rem] font-black uppercase text-white tracking-tight truncate max-w-[250px]">{r.name}</h2>
+                    </div>
+                    <button onClick={(e) => { e.preventDefault(); setModal({type:null,data:null}); }} className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-white active:scale-95 shrink-0"><Icon name="x" size={24}/></button>
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto space-y-3 pb-32">
+                    {(r.exs || []).length === 0 && (
+                      <div className="surface-card p-8 rounded-[2rem] text-center border-dashed border-white/10">
+                        <Icon name="list-plus" size={32} className="text-gray-500 mx-auto mb-3" />
+                        <p className="text-gray-400 text-[13px] font-bold">Nessun esercizio presente.<br/>Costruisci la tua scheda.</p>
+                      </div>
+                    )}
+                    {(r.exs || []).map((ex, i) => (
+                      <div key={i} className="surface-card p-4 rounded-[1.5rem] flex items-center gap-3 shadow-lg">
+                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-500 font-black text-[10px] shrink-0">{i+1}</div>
+                        <span className="text-white font-bold text-[13px] uppercase truncate flex-1">{ex}</span>
+                        <button onClick={() => {
+                          setRoutines(prev => (prev || []).map(x => {
+                            if(String(x.id) !== String(r.id)) return x;
+                            return { ...x, exs: (x.exs || []).filter((_, idx) => idx !== i) };
+                          }));
+                        }} className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-400 active:bg-red-500/30 shrink-0"><Icon name="trash-2" size={16} /></button>
+                      </div>
+                    ))}
+                    
+                    <button onClick={(e) => { e.preventDefault(); setModal({ type: 'exercise-select', target: 'routine', data: r.id }); }} className="w-full bg-[#131316] border-2 border-dashed border-indigo-500/30 py-8 flex flex-col items-center gap-2 text-indigo-400 rounded-[2rem] active:bg-indigo-500/10 transition-all mt-4">
+                      <Icon name="plus" size={24} />
+                      <span className="font-bold text-[11px] uppercase tracking-widest">Aggiungi Esercizio</span>
+                    </button>
+                  </div>
+
+                  <div className="mt-auto pt-4 pb-6 flex gap-3 bg-gradient-to-t from-black via-black to-transparent">
+                    <button onClick={(e) => { e.preventDefault(); setModal({type:null,data:null}); }} className="w-full py-4 bg-indigo-500 text-white rounded-full font-bold uppercase text-[12px] shadow-lg shadow-indigo-500/30 active:scale-95">Salva e Chiudi</button>
+                  </div>
+                </div>
+              );
+            })()
+          )}
+          
+          {/* MODAL LIBRERIA */}
+          {modal && modal.type === 'exercise-select' && (
+            <div className="fixed inset-0 z-[3000] bg-[#000000]/98 backdrop-blur-xl p-5 flex flex-col overflow-y-auto animate-in fade-in">
+              <div className="flex justify-between items-center mb-6 pt-4"><h2 className="text-[2rem] font-black uppercase text-white tracking-tight">Libreria</h2><button onClick={(e) => { e.preventDefault(); setModal(modal?.target === 'routine' ? { type: 'edit-routine', data: modal.data } : {type:null}); }} className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-white shrink-0"><Icon name="x" size={24}/></button></div>
+              
+              <div className="relative mb-6">
+                <Icon name="search" size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input type="text" placeholder="Cerca esercizio..." className="w-full pl-14 pr-6 py-4 bg-[#1C1C21] border border-white/10 rounded-full text-[15px] font-bold text-white outline-none focus:border-indigo-500" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              </div>
+
+              <div className="mb-6 space-y-3">
+                <button onClick={(e) => { e.preventDefault(); setCustomForm(f => ({...f, open: !f.open})); }} className="w-full bg-[#1C1C21] border border-white/10 rounded-3xl px-5 py-4 flex items-center justify-between text-left">
+                  <div className="flex items-center gap-3"><Icon name="plus-circle" size={20} className="text-indigo-400" /><span className="text-[11px] font-bold uppercase tracking-widest text-gray-300">Nuovo Personalizzato</span></div>
+                  <Icon name="chevron-down" size={20} className={`text-indigo-400 transition-transform ${customForm.open ? 'rotate-180' : ''}`} />
+                </button>
+                {customForm.open && (
+                  <div className="bg-[#1C1C21] border border-white/10 rounded-3xl p-5 space-y-4">
+                    <div className="grid grid-cols-1 gap-4">
+                      <select value={customForm.cat} onChange={(e) => setCustomForm(f => ({...f, cat: e.target.value}))} className="w-full bg-[#131316] border border-white/10 rounded-2xl px-4 py-3 text-[14px] font-bold text-white outline-none">
+                        {Object.keys(INITIAL_LIB).map(c => (<option key={c} value={c}>{c}</option>))}
+                        <option value="Altro">Altro</option>
+                      </select>
+                      <input value={customForm.name} onChange={(e) => setCustomForm(f => ({...f, name: e.target.value}))} placeholder="Es. Pulldown monolaterale" className="w-full bg-[#131316] border border-white/10 rounded-2xl px-4 py-3 text-[14px] font-bold text-white outline-none" />
+                    </div>
+                    <button onClick={(e) => { e.preventDefault(); if(addCustomExercise(customForm.cat, customForm.name)) setCustomForm(f => ({...f, name:''})); }} className="w-full bg-indigo-500 text-white py-3.5 rounded-2xl font-bold uppercase text-[12px] tracking-wider">Salva in Libreria</button>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3 pb-32">
+                {Object.entries(mergedLibrary).map(([cat, exs]) => {
+                  const filtered = exs.filter(e => e.toLowerCase().includes(searchQuery.toLowerCase()));
+                  if (filtered.length === 0) return null;
+                  const isOpen = searchQuery.length > 0 || expandedCats[cat];
+                  return (
+                    <div key={cat} className="surface-card rounded-3xl overflow-hidden">
+                      <div onClick={() => setExpandedCats(prev => ({ ...prev, [cat]: !prev[cat] }))} className="p-5 flex justify-between items-center bg-[#1C1C21] cursor-pointer"><span className="font-extrabold text-[12px] uppercase text-gray-300 tracking-widest">{cat}</span><Icon name="chevron-down" className={`text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} size={18} /></div>
+                      {isOpen && (
+                        <div className="p-3 space-y-2 bg-[#131316]">
+                          {filtered.map(ex => (
+                            <button key={ex} onClick={(e) => { 
+                              e.preventDefault();
+                              if (modal?.target === 'routine') {
+                                safeAddExerciseToRoutine(modal.data, ex);
+                                setModal({ type: 'edit-routine', data: modal.data });
+                              } else {
+                                safeAddExerciseToActive(ex);
+                                setModal(null);
+                              }
+                            }} className="w-full p-4 text-left font-bold bg-[#1C1C21] rounded-2xl flex justify-between items-center uppercase text-[12px] text-gray-200 active:bg-indigo-500">
+                              <span>{ex}</span><Icon name="plus" size={18} className="text-indigo-400" />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          
+          {modal && modal.type === 'name-routine' && (
+            <div className="fixed inset-0 z-[1200] bg-black/90 backdrop-blur-sm flex items-center justify-center p-6">
+              <div className="bg-[#1C1C21] border border-white/10 p-8 w-full max-w-sm rounded-[2.5rem] space-y-6 shadow-2xl">
+                <h2 className="text-[1.5rem] font-black uppercase text-center text-white">Nuova Scheda</h2>
+                <input id="rn-in" type="text" placeholder="Es. Upper Body" className="w-full text-lg font-bold bg-[#131316] border border-white/10 rounded-2xl p-4 text-center text-white outline-none focus:border-indigo-500" autoFocus />
+                <div className="flex gap-3">
+                  <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setModal({type:null}); }} className="flex-1 py-3.5 bg-white/5 rounded-full text-[11px] font-bold uppercase text-gray-400">Annulla</button>
+                  <button onClick={(e) => { 
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const val = document.getElementById('rn-in').value?.trim(); 
+                    if(val) { 
+                      const newId = String(Date.now());
+                      const r = { id: newId, name: val, exs: [], createdAt: Date.now() }; 
+                      setRoutines(prev => [r, ...(prev || [])]); 
+                      setModal({ type: 'edit-routine', data: newId }); 
+                    } 
+                  }} className="flex-1 py-3.5 bg-indigo-500 text-white rounded-full text-[11px] font-bold uppercase">Crea</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {modal && modal.type === 'confirm' && (
+            <div className="fixed inset-0 z-[4000] bg-black/90 backdrop-blur-sm flex items-center justify-center p-6">
+              <div className="bg-[#1C1C21] border border-white/10 p-8 w-full max-w-xs rounded-[2.5rem] space-y-6 text-center shadow-2xl">
+                <p className="text-[15px] font-bold text-gray-200">{modal.data}</p>
+                <div className="flex gap-3">
+                  <button onClick={(e) => { e.preventDefault(); setModal({type:null}); }} className="flex-1 py-3.5 bg-white/5 rounded-full text-[12px] font-bold uppercase text-gray-400">No</button>
+                  <button onClick={(e) => { e.preventDefault(); modal.confirmAction(); setModal({type:null,data:null}); }} className="flex-1 py-3.5 bg-indigo-500 rounded-full text-[12px] font-bold uppercase text-white">Sì</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {modal && modal.type === 'history' && modal.data && (
+            <div className="fixed inset-0 z-[3500] bg-black/95 backdrop-blur-xl p-6 overflow-y-auto view-animate">
+              <div className="max-w-md mx-auto space-y-4 pt-6 pb-20">
+                <div className="flex justify-between items-center">
+                  <div className="min-w-0">
+                    <p className="text-gray-500 text-[10px] font-extrabold uppercase tracking-[0.3em]">Sessione</p>
+                    <h2 className="text-[1.8rem] font-black uppercase tracking-tight text-white truncate">{modal.data.name}</h2>
+                    <p className="text-[11px] font-bold uppercase text-indigo-400 mt-1">
+                      {new Date(modal.data.date).toLocaleDateString()} • Vol {modal.data.vol || 0} • Durata {modal.data.duration || '--'}
+                    </p>
+                  </div>
+                  <button onClick={(e) => { e.preventDefault(); setModal({type:null}); }} className="w-12 h-12 bg-white/5 border border-white/10 rounded-full flex items-center justify-center text-white active:bg-white/10 shrink-0">
+                    <Icon name="x" size={24}/>
+                  </button>
+                </div>
+                <div className="surface-card p-6 rounded-[2.2rem] space-y-6 shadow-xl">
+                  {(modal.data.exercises || []).map((ex, exI) => (
+                    <div key={exI} className="space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <h3 className="text-[15px] font-black uppercase text-white tracking-tight truncate">{ex.name}</h3>
+                          {ex.notes ? <p className="text-[12px] text-gray-400 whitespace-pre-wrap mt-1">{ex.notes}</p> : null}
+                        </div>
+                        <div className="text-[10px] font-bold uppercase text-gray-500 whitespace-nowrap bg-white/5 px-2 py-1 rounded-lg">
+                          Rest {ex.rest || 90}s
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        {(ex.sets || []).map((s, sI) => (
+                          <div key={sI} className="grid grid-cols-12 gap-2 items-center bg-[#1C1C21] border border-white/5 rounded-2xl px-3 py-2.5">
+                            <div className="col-span-1 text-indigo-400 font-black text-center text-sm">{sI+1}</div>
+                            <div className="col-span-3 text-center font-bold tabular-nums text-white">{s.kg || '--'} kg</div>
+                            <div className="col-span-3 text-center font-bold tabular-nums text-white">{s.reps || '--'} reps</div>
+                            <div className="col-span-2 text-center text-[10px] font-bold uppercase text-gray-500">{s.w ? 'W' : 'A'}</div>
+                            <div className="col-span-3 text-left text-[11px] text-gray-400 truncate">{s.note || ''}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const src = modal.data;
+                      const ws = {
+                        id: genId(),
+                        name: src.name || "Sessione Libera",
+                        date: new Date().toISOString(),
+                        startTime: Date.now(),
+                        exercises: (src.exercises || []).map(e => ({
+                          name: e.name,
+                          rest: e.rest || 90,
+                          notes: "",
+                          sets: Array.from({ length: Math.max(1, (e.sets || []).length) }, () => ({ kg: '', reps: '', note: '', w: false, d: false }))
+                        }))
+                      };
+                      setActiveWorkout(ws);
+                      setActiveTab('workout');
+                      setModal({type:null,data:null});
+                    }}
+                    className="py-4 bg-indigo-500 text-white rounded-full font-bold uppercase text-[11px] tracking-wider active:scale-[0.98] shadow-lg"
+                  >
+                    Ripeti Workout
+                  </button>
+                  <button
+                    onClick={(e) => { e.preventDefault(); setModal({type:'rename', mode:'history', data:{ id: modal.data?.id, current: modal.data?.name || '' }}); }}
+                    className="py-4 bg-white/5 border border-white/10 text-white rounded-full font-bold uppercase text-[11px] tracking-wider active:bg-white/10"
+                  >
+                    Rinomina
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setModal({type:'confirm', confirmAction: () => {
+                        setHistory(prev => (prev || []).filter(h => h.id !== modal.data.id));
+                        setModal({type:null,data:null});
+                      }, data: "Eliminare questo allenamento dalla cronologia?"});
+                    }}
+                    className="col-span-2 py-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-full font-bold uppercase text-[11px] tracking-wider active:bg-red-500/20 mt-2"
+                  >
+                    Elimina Sessione
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {modal && modal.type === 'rename' && (
+            <div className="fixed inset-0 z-[4100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-6 view-animate">
+              <div className="surface-card p-8 w-full max-w-sm rounded-[2.5rem] space-y-6 text-center shadow-2xl">
+                <p className="text-[12px] font-extrabold uppercase tracking-widest text-gray-400">Rinomina Allenamento</p>
+                <input
+                  id="rename-in"
+                  defaultValue={modal.data?.current || ''}
+                  className="w-full text-lg font-bold bg-[#1C1C21] border border-white/10 rounded-2xl p-4 text-center text-white outline-none focus:border-indigo-500"
+                  placeholder="Nome allenamento"
+                  autoFocus
+                />
+                <div className="flex gap-3">
+                  <button onClick={(e) => { e.preventDefault(); setModal({type:null}); }} className="flex-1 py-3.5 bg-white/5 rounded-full text-[12px] font-bold uppercase text-gray-400">Annulla</button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const val = (document.getElementById('rename-in')?.value || '').trim();
+                      if (!val) return;
+                      if (modal.mode === 'active') renameActiveWorkout(val);
+                      if (modal.mode === 'history') renameHistoryWorkout(modal.data?.id, val);
+                      setModal({type:null,data:null});
+                    }}
+                    className="flex-1 py-3.5 bg-indigo-500 rounded-full text-[12px] font-bold uppercase text-white shadow-lg shadow-indigo-500/30"
+                  >
+                    Salva
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className={`fixed top-12 left-1/2 -translate-x-1/2 w-[90%] max-w-sm z-[3000] bg-[#1C1C21] border border-indigo-500/30 p-5 rounded-[2.2rem] flex items-center justify-between shadow-2xl transition-all duration-500 ${isTimerOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-8 pointer-events-none'}`}>
+            <div className="flex items-center gap-4 pl-2">
+              <div className={`font-black text-[2.5rem] tabular-nums leading-none ${timerVal <= 10 ? 'animate-pulse text-red-400' : 'text-indigo-400'}`}>{Math.floor(timerVal/60)}:{(timerVal%60).toString().padStart(2,'0')}</div>
+              <p className="text-[10px] font-bold uppercase text-gray-400 leading-tight">Recupero<br/>Attivo</p>
+            </div>
+            <button onClick={(e) => { e.preventDefault(); setIsTimerOpen(false); timerEndTimeRef.current = null; setTimerVal(0); }} className="bg-white/5 px-5 py-3 rounded-full text-[11px] font-bold uppercase text-gray-300 border border-white/10 active:bg-white/10">Salta</button>
+          </div>
+
+        </div>
+      );
+    }
+    
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
