@@ -202,7 +202,7 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
               <p className="text-gray-500 text-[10px] font-extrabold uppercase tracking-[0.3em]">Sessione</p>
               <h2 className="text-[1.8rem] font-black uppercase tracking-tight text-white truncate">{modal.data.name}</h2>
               <p className="text-[11px] font-bold uppercase text-indigo-400 mt-1">
-                {new Date(modal.data.date).toLocaleDateString()} • Vol {modal.data.vol || 0} • Durata {modal.data.duration || '--'}
+                {new Date(modal.data.date || modal.data.startTime || Date.now()).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })} {new Date(modal.data.date || modal.data.startTime || Date.now()).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })} • Vol {modal.data.vol || 0} • Durata {modal.data.duration || '--'}
               </p>
             </div>
             <button onClick={(e) => { e.preventDefault(); setModal({type:null}); }} className="w-12 h-12 bg-white/5 border border-white/10 rounded-full flex items-center justify-center text-white active:bg-white/10 shrink-0">

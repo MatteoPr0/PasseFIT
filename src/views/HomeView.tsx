@@ -115,15 +115,20 @@ export const HomeView = ({ store, setActiveTab, setModal }: any) => {
 
       <div className="space-y-3 pt-4 text-left">
         <h3 className="text-gray-400 font-extrabold text-[11px] uppercase tracking-[0.2em] px-3 mb-4">Cronologia Recente</h3>
-        {history.slice().reverse().map((h: any, i: number) => (
-          <div key={h.id || i} onClick={() => setModal({type:'history', data:h})} className="surface-card p-5 rounded-[1.8rem] flex justify-between items-center active:bg-white/5 transition-all cursor-pointer">
-            <div className="min-w-0 flex-1">
-              <p className="font-bold text-[15px] text-gray-100 truncate pr-2">{h.name}</p>
-              <p className="text-[11px] font-bold text-gray-500 mt-1 uppercase tracking-wider">{h.vol} KG • {h.duration || '--'}</p>
+        {history.slice().reverse().map((h: any, i: number) => {
+          const d = new Date(h.date || h.startTime || Date.now());
+          const dateStr = d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' });
+          const timeStr = d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+          return (
+            <div key={h.id || i} onClick={() => setModal({type:'history', data:h})} className="surface-card p-5 rounded-[1.8rem] flex justify-between items-center active:bg-white/5 transition-all cursor-pointer">
+              <div className="min-w-0 flex-1">
+                <p className="font-bold text-[15px] text-gray-100 truncate pr-2">{h.name}</p>
+                <p className="text-[11px] font-bold text-gray-500 mt-1 uppercase tracking-wider">{dateStr} {timeStr} • {h.vol} KG • {h.duration || '--'}</p>
+              </div>
+              <Icon name="chevron-right" className="text-gray-600" size={20} />
             </div>
-            <Icon name="chevron-right" className="text-gray-600" size={20} />
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
