@@ -13,7 +13,7 @@ export default defineConfig(({mode}) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+        includeAssets: ['pwa-192x192.png', 'pwa-512x512.png', 'pwa-512x512.svg'],
         manifest: {
           name: 'PasseFIT',
           short_name: 'PasseFIT',
@@ -21,16 +21,33 @@ export default defineConfig(({mode}) => {
           theme_color: '#050505',
           background_color: '#050505',
           display: 'standalone',
+          start_url: '/PasseFIT/',
+          scope: '/PasseFIT/',
           orientation: 'portrait',
           icons: [
             {
+              src: 'pwa-192x192.png',
+              sizes: '192x192',
+              type: 'image/png'
+            },
+            {
+              src: 'pwa-512x512.png',
+              sizes: '512x512',
+              type: 'image/png'
+            },
+            {
               src: 'pwa-512x512.svg',
-              sizes: 'any',
+              sizes: '192x192',
               type: 'image/svg+xml'
             },
             {
               src: 'pwa-512x512.svg',
-              sizes: 'any',
+              sizes: '512x512',
+              type: 'image/svg+xml'
+            },
+            {
+              src: 'pwa-512x512.svg',
+              sizes: '512x512',
               type: 'image/svg+xml',
               purpose: 'any maskable'
             }
