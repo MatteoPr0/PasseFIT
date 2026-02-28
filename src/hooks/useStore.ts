@@ -61,10 +61,22 @@ export const useStore = () => {
   useEffect(() => {
     if (!isDataLoaded) return;
     idbKeyval.set('af_v57_h', history);
+  }, [history, isDataLoaded]);
+
+  useEffect(() => {
+    if (!isDataLoaded) return;
     idbKeyval.set('af_v57_r', routines);
+  }, [routines, isDataLoaded]);
+
+  useEffect(() => {
+    if (!isDataLoaded) return;
     idbKeyval.set('af_v57_c', customs);
+  }, [customs, isDataLoaded]);
+
+  useEffect(() => {
+    if (!isDataLoaded) return;
     idbKeyval.set('af_v57_aw', activeWorkout);
-  }, [history, routines, customs, activeWorkout, isDataLoaded]);
+  }, [activeWorkout, isDataLoaded]);
 
   const mergedLibrary = useMemo(() => {
     const out: Record<string, string[]> = {};

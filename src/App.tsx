@@ -17,6 +17,22 @@ export default function App() {
   const timerEndTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
+    const playBeep = () => {
+      try {
+        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, ctx.currentTime);
+        gain.gain.setValueAtTime(0.5, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.5);
+      } catch(e) {}
+    };
+
     const interval = setInterval(() => {
       if (store.activeWorkout && store.activeWorkout.startTime) {
         const diff = Date.now() - store.activeWorkout.startTime;
@@ -31,6 +47,7 @@ export default function App() {
         if (remaining <= 0) { 
           setIsTimerOpen(false); 
           if (navigator.vibrate) navigator.vibrate([200, 100, 200]); 
+          playBeep();
         }
       }
     }, 1000);
