@@ -85,6 +85,15 @@ export const WorkoutView = ({ store, setActiveTab, setModal, sessionDuration, ti
     if (!activeWorkout) return;
     const n = deepClone(activeWorkout.exercises);
     const s = n[exI].sets[sI];
+    
+    if (!s.d) {
+      const ghost = getGhostSet(n[exI].name, sI);
+      if (ghost) {
+        if (!s.kg && ghost.kg) s.kg = ghost.kg;
+        if (!s.reps && ghost.reps) s.reps = ghost.reps;
+      }
+    }
+
     s.d = !s.d;
     if (s.d) {
       const r = parseInt(n[exI].rest) || 90;
