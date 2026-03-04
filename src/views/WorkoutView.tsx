@@ -96,6 +96,12 @@ export const WorkoutView = ({ store, setActiveTab, setModal, sessionDuration, ti
 
     s.d = !s.d;
     if (s.d) {
+      try {
+        if ('Notification' in window && Notification.permission === 'default') {
+          Notification.requestPermission();
+        }
+      } catch (e) {}
+      
       const r = parseInt(n[exI].rest) || 90;
       timerEndTimeRef.current = Date.now() + (r * 1000);
       setTimerVal(r);

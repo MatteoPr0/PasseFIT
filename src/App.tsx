@@ -46,8 +46,30 @@ export default function App() {
         setTimerVal(remaining);
         if (remaining <= 0) { 
           setIsTimerOpen(false); 
-          if (navigator.vibrate) navigator.vibrate([200, 100, 200]); 
+          if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200, 100, 400]); 
           playBeep();
+          
+          if ('Notification' in window && Notification.permission === 'granted') {
+            try {
+              new Notification('PasseFIT', {
+                body: 'Tempo di recupero terminato! Preparati per la prossima serie.',
+                icon: '/PasseFIT/pwa-192x192.png',
+                vibrate: [200, 100, 200, 100, 200, 100, 400],
+                requireInteraction: true
+              });
+            } catch (e) {
+              if (navigator.serviceWorker) {
+                navigator.serviceWorker.ready.then(registration => {
+                  registration.showNotification('PasseFIT', {
+                    body: 'Tempo di recupero terminato! Preparati per la prossima serie.',
+                    icon: '/PasseFIT/pwa-192x192.png',
+                    vibrate: [200, 100, 200, 100, 200, 100, 400],
+                    requireInteraction: true
+                  });
+                });
+              }
+            }
+          }
         }
       }
     }, 1000);
