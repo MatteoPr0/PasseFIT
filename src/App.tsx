@@ -6,10 +6,23 @@ import { WorkoutView } from './views/WorkoutView';
 import { RoutinesView } from './views/RoutinesView';
 import { StatsView } from './views/StatsView';
 import { Modals } from './components/Modals';
+import { AnimatePresence, motion } from 'motion/react';
 
 export default function App() {
   const store = useStore();
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTabState, setActiveTabState] = useState('home');
+  const [direction, setDirection] = useState(0);
+
+  const setActiveTab = (newTab: string) => {
+    const order = ['home', 'routines', 'stats', 'workout'];
+    const currentIndex = order.indexOf(activeTabState);
+    const newIndex = order.indexOf(newTab);
+    setDirection(newIndex > currentIndex ? 1 : -1);
+    setActiveTabState(newTab);
+  };
+
+  const activeTab = activeTabState;
+
   const [modal, setModal] = useState<any>({ type: null });
   const [sessionDuration, setSessionDuration] = useState("00:00:00");
   const [isTimerOpen, setIsTimerOpen] = useState(false);
@@ -79,60 +92,98 @@ export default function App() {
   if (!store.isDataLoaded) {
     return (
       <div className="min-h-screen bg-[#000000] flex flex-col items-center justify-center p-6 space-y-4">
-        <Icon name="loader-2" size={32} className="text-indigo-500 animate-spin" />
+        <Icon name="loader-2" size={32} className="text-sky-500 animate-spin" />
         <div className="text-gray-400 text-xs font-bold uppercase tracking-[0.2em] animate-pulse">Sincronizzazione DB...</div>
       </div>
     );
   }
 
+  const pageVariants = {
+    initial: (direction: number) => ({
+      x: direction > 0 ? '150%' : '-150%',
+    }),
+    in: {
+      x: 0,
+    },
+    out: (direction: number) => ({
+      x: direction > 0 ? '-150%' : '150%',
+    })
+  };
+
+  const pageTransition = {
+    type: "tween",
+    ease: [0.4, 0.0, 0.2, 1], // Standard material design easing (snappy but smooth)
+    duration: 0.35
+  };
+
   return (
-    <div className="max-w-md mx-auto min-h-screen px-4 pb-36">
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-10%] left-[-15%] w-[130vw] h-[130vw] bg-indigo-600/[0.08] rounded-full blur-[150px]" />
+    <div className="max-w-md mx-auto min-h-screen px-4 pb-36 overflow-x-hidden">
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-[-15%] w-[130vw] h-[130vw] bg-sky-600/[0.08] rounded-full blur-[150px]" />
       </div>
       
-      <div className="relative z-10 pt-8">
-        {activeTab === 'home' && (
-          <HomeView 
-            store={store} 
-            setActiveTab={setActiveTab} 
-            setModal={setModal} 
-          />
-        )}
+      <div className="relative z-10">
+        <AnimatePresence mode="popLayout" custom={direction}>
+          {activeTab === 'home' && (
+            <motion.div key="home" className="w-full" custom={direction} initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
+              <HomeView 
+                store={store} 
+                setActiveTab={setActiveTab} 
+                setModal={setModal} 
+              />
+            </motion.div>
+          )}
 
-        {activeTab === 'workout' && store.activeWorkout && (
-          <WorkoutView 
-            store={store} 
-            setActiveTab={setActiveTab} 
-            setModal={setModal}
-            sessionDuration={sessionDuration}
-            timerEndTimeRef={timerEndTimeRef}
-            setTimerVal={setTimerVal}
-            setIsTimerOpen={setIsTimerOpen}
-          />
-        )}
+          {activeTab === 'workout' && store.activeWorkout && (
+            <motion.div key="workout" className="w-full" custom={direction} initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
+              <WorkoutView 
+                store={store} 
+                setActiveTab={setActiveTab} 
+                setModal={setModal}
+                sessionDuration={sessionDuration}
+                timerEndTimeRef={timerEndTimeRef}
+                setTimerVal={setTimerVal}
+                setIsTimerOpen={setIsTimerOpen}
+              />
+            </motion.div>
+          )}
 
-        {activeTab === 'routines' && (
-          <RoutinesView 
-            store={store} 
-            setActiveTab={setActiveTab} 
-            setModal={setModal} 
-          />
-        )}
+          {activeTab === 'routines' && (
+            <motion.div key="routines" className="w-full" custom={direction} initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
+              <RoutinesView 
+                store={store} 
+                setActiveTab={setActiveTab} 
+                setModal={setModal} 
+              />
+            </motion.div>
+          )}
 
-        {activeTab === 'stats' && (
-          <StatsView 
-            store={store} 
-            setModal={setModal} 
-          />
-        )}
+          {activeTab === 'stats' && (
+            <motion.div key="stats" className="w-full" custom={direction} initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
+              <StatsView 
+                store={store} 
+                setModal={setModal} 
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
       
       <nav className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm z-50 transition-transform duration-500 ${activeTab === 'workout' ? 'translate-y-32 opacity-0 pointer-events-none' : ''}`}>
-        <div className="bg-[#1C1C21]/90 backdrop-blur-xl border border-white/10 p-2 rounded-full flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
-          <button onClick={() => setActiveTab('home')} className={`flex-1 flex justify-center py-3 rounded-full transition-all ${activeTab === 'home' ? 'bg-indigo-500 text-white shadow-md' : 'text-gray-500'}`}><Icon name="home" size={22} /></button>
-          <button onClick={() => setActiveTab('routines')} className={`flex-1 flex justify-center py-3 rounded-full transition-all ${activeTab === 'routines' ? 'bg-indigo-500 text-white shadow-md' : 'text-gray-500'}`}><Icon name="clipboard-list" size={22} /></button>
-          <button onClick={() => setActiveTab('stats')} className={`flex-1 flex justify-center py-3 rounded-full transition-all ${activeTab === 'stats' ? 'bg-indigo-500 text-white shadow-md' : 'text-gray-500'}`}><Icon name="database" size={22} /></button>
+        <div className="bg-[#1C1C21]/90 backdrop-blur-xl border border-white/10 p-2 rounded-full flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.8)] relative">
+          <motion.div 
+            className="absolute top-2 bottom-2 bg-sky-500 rounded-full shadow-md"
+            layoutId="activeTabIndicator"
+            initial={false}
+            animate={{
+              width: 'calc(33.333% - 5.33px)',
+              left: activeTab === 'home' ? '8px' : activeTab === 'routines' ? 'calc(33.333% + 2.66px)' : 'calc(66.666% - 2.66px)'
+            }}
+            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+          />
+          <button onClick={() => setActiveTab('home')} className={`relative z-10 flex-1 flex justify-center py-3 rounded-full transition-colors ${activeTab === 'home' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}><Icon name="home" size={22} /></button>
+          <button onClick={() => setActiveTab('routines')} className={`relative z-10 flex-1 flex justify-center py-3 rounded-full transition-colors ${activeTab === 'routines' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}><Icon name="clipboard-list" size={22} /></button>
+          <button onClick={() => setActiveTab('stats')} className={`relative z-10 flex-1 flex justify-center py-3 rounded-full transition-colors ${activeTab === 'stats' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}><Icon name="database" size={22} /></button>
         </div>
       </nav>
 
@@ -143,13 +194,20 @@ export default function App() {
         setActiveTab={setActiveTab} 
       />
 
-      {isTimerOpen && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 bg-indigo-500 text-white px-6 py-3 rounded-full font-black text-xl shadow-[0_10px_30px_rgba(99,102,241,0.5)] z-[9999] flex items-center gap-3 animate-in slide-in-from-top-10">
-          <Icon name="clock" size={20} />
-          {Math.floor(timerVal / 60)}:{(timerVal % 60).toString().padStart(2, '0')}
-          <button onClick={() => setIsTimerOpen(false)} className="ml-2 bg-white/20 p-1 rounded-full"><Icon name="x" size={16}/></button>
-        </div>
-      )}
+      <AnimatePresence>
+        {isTimerOpen && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-6 left-1/2 -translate-x-1/2 bg-sky-500 text-white px-6 py-3 rounded-full font-black text-xl shadow-[0_10px_30px_rgba(14,165,233,0.5)] z-[9999] flex items-center gap-3"
+          >
+            <Icon name="clock" size={20} />
+            {Math.floor(timerVal / 60)}:{(timerVal % 60).toString().padStart(2, '0')}
+            <button onClick={() => setIsTimerOpen(false)} className="ml-2 bg-white/20 p-1 rounded-full"><Icon name="x" size={16}/></button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

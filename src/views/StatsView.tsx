@@ -98,12 +98,14 @@ export const StatsView = ({ store, setModal }: any) => {
   };
 
   return (
-    <div className="space-y-8 pt-4 view-animate pb-12 text-left">
-      <h1 className="text-[2.5rem] font-black tracking-tight text-white px-2">Dati</h1>
+    <div className="space-y-8 pt-8 view-animate pb-12 text-left">
+      <header className="sticky top-0 z-50 px-2 py-4 -mx-2 bg-[#000000]/80 backdrop-blur-xl rounded-b-3xl">
+        <h1 className="text-[2.5rem] font-black tracking-tight text-white pl-2">Dati</h1>
+      </header>
       
       {historyExercises.length > 0 && (
         <div className="surface-card p-6 rounded-[2.2rem] space-y-6 shadow-lg">
-          <h3 className="text-[11px] font-extrabold uppercase text-indigo-400 tracking-[0.2em]">Progressione Esercizi</h3>
+          <h3 className="text-[11px] font-extrabold uppercase text-sky-400 tracking-[0.2em]">Progressione Esercizi</h3>
           
           <select 
             value={selectedEx} 
@@ -121,13 +123,13 @@ export const StatsView = ({ store, setModal }: any) => {
                 <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
                   <XAxis dataKey="date" stroke="#6B7280" fontSize={10} tickLine={false} axisLine={false} />
-                  <YAxis yAxisId="left" stroke="#818cf8" fontSize={10} tickLine={false} axisLine={false} />
+                  <YAxis yAxisId="left" stroke="#38bdf8" fontSize={10} tickLine={false} axisLine={false} />
                   <YAxis yAxisId="right" orientation="right" stroke="#34d399" fontSize={10} tickLine={false} axisLine={false} />
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#1C1C21', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '1rem', fontSize: '12px', fontWeight: 'bold' }}
                     itemStyle={{ color: '#fff' }}
                   />
-                  <Line yAxisId="left" type="monotone" dataKey="maxKg" name="Max KG" stroke="#818cf8" strokeWidth={3} dot={{ r: 4, fill: '#818cf8', strokeWidth: 0 }} activeDot={{ r: 6 }} />
+                  <Line yAxisId="left" type="monotone" dataKey="maxKg" name="Max KG" stroke="#38bdf8" strokeWidth={3} dot={{ r: 4, fill: '#38bdf8', strokeWidth: 0 }} activeDot={{ r: 6 }} />
                   <Line yAxisId="right" type="monotone" dataKey="totalVol" name="Volume (KG)" stroke="#34d399" strokeWidth={3} dot={{ r: 4, fill: '#34d399', strokeWidth: 0 }} activeDot={{ r: 6 }} />
                 </LineChart>
               </ResponsiveContainer>
@@ -141,9 +143,9 @@ export const StatsView = ({ store, setModal }: any) => {
       )}
 
       <div className="surface-card p-6 rounded-[2.2rem] space-y-6 shadow-lg">
-        <h3 className="text-[11px] font-extrabold uppercase text-indigo-400 tracking-[0.2em]">Manutenzione</h3>
+        <h3 className="text-[11px] font-extrabold uppercase text-sky-400 tracking-[0.2em]">Manutenzione</h3>
         <div className="space-y-3">
-          <button onClick={exportCSV} className="w-full bg-indigo-500 text-white py-4 rounded-full font-bold uppercase text-[12px] flex items-center justify-center gap-3 active:scale-[0.98] shadow-lg shadow-indigo-500/30">
+          <button onClick={exportCSV} className="w-full bg-sky-500 text-white py-4 rounded-full font-bold uppercase text-[12px] flex items-center justify-center gap-3 active:scale-[0.98] shadow-lg shadow-sky-500/30">
             <Icon name="file-spreadsheet" size={18} /> Esporta in CSV
           </button>
 

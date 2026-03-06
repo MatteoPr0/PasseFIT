@@ -28,13 +28,34 @@ export const useStore = () => {
           if (storedRoutines.length > 0) await idbKeyval.set('af_v57_r', storedRoutines);
         }
         if (storedCustoms === undefined) {
-          storedCustoms = JSON.parse(localStorage.getItem('af_v57_c') || '{}');
-          if (Object.keys(storedCustoms).length > 0) await idbKeyval.set('af_v57_c', storedCustoms);
+          storedCustoms = JSON.parse(localStorage.getItem('af_v57_c') || 'null');
         }
         if (storedActiveWorkout === undefined) {
           storedActiveWorkout = JSON.parse(localStorage.getItem('af_v57_aw') || 'null');
           if (storedActiveWorkout) await idbKeyval.set('af_v57_aw', storedActiveWorkout);
         }
+
+        let libraryToSet = storedCustoms || {};
+        const isOldCustoms = !libraryToSet["Petto"] || libraryToSet["Petto"].length < 5;
+        if (isOldCustoms) {
+            const newLib = deepClone(INITIAL_LIB);
+            Object.keys(libraryToSet).forEach(cat => {
+                if (!newLib[cat]) newLib[cat] = [];
+                newLib[cat].push(...libraryToSet[cat]);
+            });
+            libraryToSet = newLib;
+        }
+
+        Object.keys(libraryToSet).forEach(cat => {
+            const seen = new Set();
+            libraryToSet[cat] = libraryToSet[cat].filter((x: string) => {
+                const k = (x || "").trim().toLowerCase();
+                if (!k || seen.has(k)) return false;
+                seen.add(k); return true;
+            }).sort((a: string,b: string)=>a.localeCompare(b,'it',{sensitivity:'base'}));
+        });
+
+        if (isOldCustoms) await idbKeyval.set('af_v57_c', libraryToSet);
 
         let historyToSet = storedHistory || [];
         let changed = false;
@@ -47,7 +68,7 @@ export const useStore = () => {
 
         setHistory(historyToSet);
         setRoutines(storedRoutines || []);
-        setCustoms(storedCustoms || {});
+        setCustoms(libraryToSet);
         setActiveWorkout(storedActiveWorkout || null);
       } catch (error) { 
         console.error("Errore IndexedDB:", error); 
@@ -79,18 +100,7 @@ export const useStore = () => {
   }, [activeWorkout, isDataLoaded]);
 
   const mergedLibrary = useMemo(() => {
-    const out: Record<string, string[]> = {};
-    Object.keys(INITIAL_LIB).forEach(cat => { out[cat] = [...(INITIAL_LIB[cat] || []), ...(customs?.[cat] || [])]; });
-    Object.keys(customs || {}).forEach(cat => { if (!out[cat]) out[cat] = [...(customs?.[cat] || [])]; });
-    Object.keys(out).forEach(cat => {
-        const seen = new Set();
-        out[cat] = out[cat].filter(x => {
-            const k = (x || "").trim().toLowerCase();
-            if (!k || seen.has(k)) return false;
-            seen.add(k); return true;
-        }).sort((a,b)=>a.localeCompare(b,'it',{sensitivity:'base'}));
-    });
-    return out;
+    return customs;
   }, [customs]);
 
   const muscleMap = useMemo(() => {

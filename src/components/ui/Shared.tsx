@@ -19,7 +19,7 @@ export const EtherInput: React.FC<EtherInputProps> = ({ initialValue, onCommit, 
       placeholder={ghost || '--'}
       onBlur={() => onCommit(localVal)}
       onChange={(e) => setLocalVal(e.target.value)}
-      className={`${className} bg-[#1C1C21] border border-white/[0.08] rounded-2xl py-3 text-center text-[15px] font-bold text-white outline-none w-full transition-all placeholder:text-gray-600`}
+      className={`${className} bg-[#1C1C21] border border-white/[0.08] rounded-2xl py-3 text-center text-[15px] font-mono font-bold tabular-nums text-white outline-none w-full transition-all placeholder:text-gray-600`}
     />
   );
 };
@@ -86,7 +86,7 @@ export const MiniBarChart: React.FC<MiniBarChartProps> = ({ data, height = 64 })
           const y = baselineY - barH;
           const bw = barW * 0.7;
           const r = Math.min(8, bw / 2);
-          return <rect key={i} x={x} y={y} width={bw} height={barH} rx={r} ry={r} fill="#818cf8" />;
+          return <rect key={i} x={x} y={y} width={bw} height={barH} rx={r} ry={r} fill="#38bdf8" />;
         })
       )}
     </svg>

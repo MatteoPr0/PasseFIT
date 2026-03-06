@@ -58,14 +58,14 @@ export const HomeView = ({ store, setActiveTab, setModal }: any) => {
   };
 
   return (
-    <div className="space-y-6 view-animate">
-      <header className="flex justify-between items-center px-2">
-        <div>
-          <p className="text-indigo-400 text-[10px] font-extrabold uppercase tracking-[0.3em]">v1.0-passefit</p>
+    <div className="space-y-6 view-animate pt-8">
+      <header className="sticky top-0 z-50 flex justify-between items-center px-2 py-4 -mx-2 bg-[#000000]/80 backdrop-blur-xl rounded-b-3xl">
+        <div className="pl-2">
+          <p className="text-sky-400 text-[10px] font-extrabold uppercase tracking-[0.3em]">v1.0-passefit</p>
           <h1 className="text-[2.5rem] font-black tracking-tight mt-1 text-white">PasseFIT</h1>
         </div>
-        <div className="w-14 h-14 surface-card flex items-center justify-center rounded-[1.2rem] shadow-2xl">
-          <Icon name="dumbbell" size={26} className="text-indigo-400" />
+        <div className="w-14 h-14 surface-card flex items-center justify-center rounded-[1.2rem] shadow-2xl mr-2">
+          <Icon name="dumbbell" size={26} className="text-sky-400" />
         </div>
       </header>
 
@@ -85,7 +85,7 @@ export const HomeView = ({ store, setActiveTab, setModal }: any) => {
         <div className="col-span-2 surface-card p-6 rounded-[2.2rem] shadow-xl">
             <div className="flex items-start justify-between gap-4">
                 <div>
-                    <p className="text-[10px] font-extrabold text-indigo-400 uppercase tracking-widest">Attività</p>
+                    <p className="text-[10px] font-extrabold text-sky-400 uppercase tracking-widest">Attività</p>
                     <p className="text-gray-300 text-[13px] font-bold mt-1">Ultimi 14 giorni</p>
                 </div>
                 <div className="flex items-center gap-4 flex-shrink-0">
@@ -109,7 +109,7 @@ export const HomeView = ({ store, setActiveTab, setModal }: any) => {
         </div>
       </div>
 
-      <button onClick={() => activeWorkout ? setActiveTab('workout') : startWorkout()} className="w-full bg-indigo-500 text-white py-6 rounded-[2rem] flex items-center justify-center gap-3 font-black text-xl shadow-[0_10px_30px_rgba(99,102,241,0.3)] active:scale-[0.98] transition-all">
+      <button onClick={() => activeWorkout ? setActiveTab('workout') : startWorkout()} className="w-full bg-sky-500 text-white py-6 rounded-[2rem] flex items-center justify-center gap-3 font-black text-xl shadow-[0_10px_30px_rgba(14,165,233,0.3)] active:scale-[0.98] transition-all">
         <Icon name={activeWorkout ? "play-circle" : "zap"} size={26} /> {activeWorkout ? 'Riprendi Sessione' : 'Inizia Allenamento'}
       </button>
 

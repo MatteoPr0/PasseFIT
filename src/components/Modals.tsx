@@ -8,6 +8,7 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [customForm, setCustomForm] = useState({ open:false, name:'', cat:'Petto' });
   const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({});
+  const [editMode, setEditMode] = useState(false);
 
   const safeAddExerciseToRoutine = (rId: string, name: string) => setRoutines((prev: any) => (prev || []).map((r: any) => {
     if(String(r.id) !== String(rId)) return r;
@@ -52,7 +53,7 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
       <div className="fixed inset-0 z-[2000] bg-[#000000]/95 backdrop-blur-xl p-5 flex flex-col animate-in fade-in">
         <div className="flex justify-between items-center mb-6 pt-4 text-left">
           <div>
-            <p className="text-[10px] font-extrabold uppercase text-indigo-400 tracking-widest">Configura Scheda</p>
+            <p className="text-[10px] font-extrabold uppercase text-sky-400 tracking-widest">Configura Scheda</p>
             <h2 className="text-[2rem] font-black uppercase text-white tracking-tight truncate max-w-[250px]">{r.name}</h2>
           </div>
           <button onClick={(e) => { e.preventDefault(); setModal({type:null,data:null}); }} className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-white active:scale-95 shrink-0"><Icon name="x" size={24}/></button>
@@ -78,14 +79,14 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
             </div>
           ))}
           
-          <button onClick={(e) => { e.preventDefault(); setModal({ type: 'exercise-select', target: 'routine', data: r.id }); }} className="w-full bg-[#131316] border-2 border-dashed border-indigo-500/30 py-8 flex flex-col items-center gap-2 text-indigo-400 rounded-[2rem] active:bg-indigo-500/10 transition-all mt-4">
+          <button onClick={(e) => { e.preventDefault(); setModal({ type: 'exercise-select', target: 'routine', data: r.id }); }} className="w-full bg-[#131316] border-2 border-dashed border-sky-500/30 py-8 flex flex-col items-center gap-2 text-sky-400 rounded-[2rem] active:bg-sky-500/10 transition-all mt-4">
             <Icon name="plus" size={24} />
             <span className="font-bold text-[11px] uppercase tracking-widest">Aggiungi Esercizio</span>
           </button>
         </div>
 
         <div className="mt-auto pt-4 pb-6 flex gap-3 bg-gradient-to-t from-black via-black to-transparent">
-          <button onClick={(e) => { e.preventDefault(); setModal({type:null,data:null}); }} className="w-full py-4 bg-indigo-500 text-white rounded-full font-bold uppercase text-[12px] shadow-lg shadow-indigo-500/30 active:scale-95">Salva e Chiudi</button>
+          <button onClick={(e) => { e.preventDefault(); setModal({type:null,data:null}); }} className="w-full py-4 bg-sky-500 text-white rounded-full font-bold uppercase text-[12px] shadow-lg shadow-sky-500/30 active:scale-95">Salva e Chiudi</button>
         </div>
       </div>
     );
@@ -94,17 +95,23 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
   if (modal.type === 'exercise-select') {
     return (
       <div className="fixed inset-0 z-[3000] bg-[#000000]/98 backdrop-blur-xl p-5 flex flex-col overflow-y-auto animate-in fade-in">
-        <div className="flex justify-between items-center mb-6 pt-4"><h2 className="text-[2rem] font-black uppercase text-white tracking-tight">Libreria</h2><button onClick={(e) => { e.preventDefault(); setModal(modal?.target === 'routine' ? { type: 'edit-routine', data: modal.data } : {type:null}); }} className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-white shrink-0"><Icon name="x" size={24}/></button></div>
+        <div className="flex justify-between items-center mb-6 pt-4">
+          <h2 className="text-[2rem] font-black uppercase text-white tracking-tight">Libreria</h2>
+          <div className="flex gap-2">
+            <button onClick={(e) => { e.preventDefault(); setEditMode(!editMode); }} className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-colors ${editMode ? 'bg-amber-500 text-white' : 'bg-white/10 text-gray-400'}`}><Icon name="pencil" size={20}/></button>
+            <button onClick={(e) => { e.preventDefault(); setEditMode(false); setModal(modal?.target === 'routine' ? { type: 'edit-routine', data: modal.data } : {type:null}); }} className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-white shrink-0"><Icon name="x" size={24}/></button>
+          </div>
+        </div>
         
         <div className="relative mb-6">
           <Icon name="search" size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input type="text" placeholder="Cerca esercizio..." className="w-full pl-14 pr-6 py-4 bg-[#1C1C21] border border-white/10 rounded-full text-[15px] font-bold text-white outline-none focus:border-indigo-500" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+          <input type="text" placeholder="Cerca esercizio..." className="w-full pl-14 pr-6 py-4 bg-[#1C1C21] border border-white/10 rounded-full text-[15px] font-bold text-white outline-none focus:border-sky-500" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
         </div>
 
         <div className="mb-6 space-y-3">
           <button onClick={(e) => { e.preventDefault(); setCustomForm(f => ({...f, open: !f.open})); }} className="w-full bg-[#1C1C21] border border-white/10 rounded-3xl px-5 py-4 flex items-center justify-between text-left">
-            <div className="flex items-center gap-3"><Icon name="plus-circle" size={20} className="text-indigo-400" /><span className="text-[11px] font-bold uppercase tracking-widest text-gray-300">Nuovo Personalizzato</span></div>
-            <Icon name="chevron-down" size={20} className={`text-indigo-400 transition-transform ${customForm.open ? 'rotate-180' : ''}`} />
+            <div className="flex items-center gap-3"><Icon name="plus-circle" size={20} className="text-sky-400" /><span className="text-[11px] font-bold uppercase tracking-widest text-gray-300">Nuovo Personalizzato</span></div>
+            <Icon name="chevron-down" size={20} className={`text-sky-400 transition-transform ${customForm.open ? 'rotate-180' : ''}`} />
           </button>
           {customForm.open && (
             <div className="bg-[#1C1C21] border border-white/10 rounded-3xl p-5 space-y-4">
@@ -115,7 +122,7 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
                 </select>
                 <input value={customForm.name} onChange={(e) => setCustomForm(f => ({...f, name: e.target.value}))} placeholder="Es. Pulldown monolaterale" className="w-full bg-[#131316] border border-white/10 rounded-2xl px-4 py-3 text-[14px] font-bold text-white outline-none" />
               </div>
-              <button onClick={(e) => { e.preventDefault(); if(addCustomExercise(customForm.cat, customForm.name)) setCustomForm(f => ({...f, name:''})); }} className="w-full bg-indigo-500 text-white py-3.5 rounded-2xl font-bold uppercase text-[12px] tracking-wider">Salva in Libreria</button>
+              <button onClick={(e) => { e.preventDefault(); if(addCustomExercise(customForm.cat, customForm.name)) setCustomForm(f => ({...f, name:''})); }} className="w-full bg-sky-500 text-white py-3.5 rounded-2xl font-bold uppercase text-[12px] tracking-wider">Salva in Libreria</button>
             </div>
           )}
         </div>
@@ -133,15 +140,19 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
                     {filtered.map((ex: string) => (
                       <button key={ex} onClick={(e) => { 
                         e.preventDefault();
-                        if (modal?.target === 'routine') {
-                          safeAddExerciseToRoutine(modal.data, ex);
-                          setModal({ type: 'edit-routine', data: modal.data });
+                        if (editMode) {
+                          setModal({ type: 'edit-exercise', data: { cat, name: ex }, prevModal: modal });
                         } else {
-                          safeAddExerciseToActive(ex);
-                          setModal({type: null});
+                          if (modal?.target === 'routine') {
+                            safeAddExerciseToRoutine(modal.data, ex);
+                            setModal({ type: 'edit-routine', data: modal.data });
+                          } else {
+                            safeAddExerciseToActive(ex);
+                            setModal({type: null});
+                          }
                         }
-                      }} className="w-full p-4 text-left font-bold bg-[#1C1C21] rounded-2xl flex justify-between items-center uppercase text-[12px] text-gray-200 active:bg-indigo-500">
-                        <span>{ex}</span><Icon name="plus" size={18} className="text-indigo-400" />
+                      }} className={`w-full p-4 text-left font-bold bg-[#1C1C21] rounded-2xl flex justify-between items-center uppercase text-[12px] text-gray-200 ${editMode ? 'active:bg-amber-500/20' : 'active:bg-sky-500'}`}>
+                        <span>{ex}</span><Icon name={editMode ? "pencil" : "plus"} size={18} className={editMode ? "text-amber-400" : "text-sky-400"} />
                       </button>
                     ))}
                   </div>
@@ -154,12 +165,73 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
     );
   }
 
+  if (modal.type === 'edit-exercise') {
+    return (
+      <div className="fixed inset-0 z-[4000] bg-black/90 backdrop-blur-sm flex items-center justify-center p-6">
+        <div className="bg-[#1C1C21] border border-white/10 p-8 w-full max-w-sm rounded-[2.5rem] space-y-6 shadow-2xl">
+          <h2 className="text-[1.5rem] font-black uppercase text-center text-white">Modifica Esercizio</h2>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="text-[10px] font-extrabold uppercase text-gray-500 tracking-widest ml-2 mb-1 block">Nome Esercizio</label>
+              <input id="edit-ex-name" type="text" defaultValue={modal.data.name} className="w-full text-sm font-bold bg-[#131316] border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-amber-500" />
+            </div>
+            <div>
+              <label className="text-[10px] font-extrabold uppercase text-gray-500 tracking-widest ml-2 mb-1 block">Gruppo Muscolare</label>
+              <select id="edit-ex-cat" defaultValue={modal.data.cat} className="w-full text-sm font-bold bg-[#131316] border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-amber-500">
+                {Object.keys(INITIAL_LIB).map(c => (<option key={c} value={c}>{c}</option>))}
+                <option value="Altro">Altro</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <button onClick={(e) => { e.preventDefault(); setModal(modal.prevModal); }} className="flex-1 py-3.5 bg-white/5 rounded-full text-[11px] font-bold uppercase text-gray-400">Annulla</button>
+            <button onClick={(e) => { 
+              e.preventDefault();
+              const newName = (document.getElementById('edit-ex-name') as HTMLInputElement)?.value?.trim();
+              const newCat = (document.getElementById('edit-ex-cat') as HTMLSelectElement)?.value;
+              if (newName && newCat) {
+                const newCustoms = { ...customs };
+                // Remove from old category
+                if (newCustoms[modal.data.cat]) {
+                  newCustoms[modal.data.cat] = newCustoms[modal.data.cat].filter((x: string) => x !== modal.data.name);
+                }
+                // Add to new category
+                if (!newCustoms[newCat]) newCustoms[newCat] = [];
+                newCustoms[newCat].push(newName);
+                
+                // Sort
+                newCustoms[newCat] = newCustoms[newCat].sort((a: string,b: string)=>a.localeCompare(b,'it',{sensitivity:'base'}));
+                
+                setCustoms(newCustoms);
+                setModal(modal.prevModal);
+              }
+            }} className="flex-1 py-3.5 bg-amber-500 text-white rounded-full text-[11px] font-bold uppercase">Salva</button>
+          </div>
+          
+          <button onClick={(e) => {
+            e.preventDefault();
+            if (confirm("Sei sicuro di voler eliminare questo esercizio?")) {
+              const newCustoms = { ...customs };
+              if (newCustoms[modal.data.cat]) {
+                newCustoms[modal.data.cat] = newCustoms[modal.data.cat].filter((x: string) => x !== modal.data.name);
+                setCustoms(newCustoms);
+              }
+              setModal(modal.prevModal);
+            }
+          }} className="w-full py-3.5 bg-red-500/10 text-red-500 rounded-full text-[11px] font-bold uppercase border border-red-500/20 mt-2">Elimina Esercizio</button>
+        </div>
+      </div>
+    );
+  }
+
   if (modal.type === 'name-routine') {
     return (
       <div className="fixed inset-0 z-[1200] bg-black/90 backdrop-blur-sm flex items-center justify-center p-6">
         <div className="bg-[#1C1C21] border border-white/10 p-8 w-full max-w-sm rounded-[2.5rem] space-y-6 shadow-2xl">
           <h2 className="text-[1.5rem] font-black uppercase text-center text-white">Nuova Scheda</h2>
-          <input id="rn-in" type="text" placeholder="Es. Upper Body" className="w-full text-lg font-bold bg-[#131316] border border-white/10 rounded-2xl p-4 text-center text-white outline-none focus:border-indigo-500" autoFocus />
+          <input id="rn-in" type="text" placeholder="Es. Upper Body" className="w-full text-lg font-bold bg-[#131316] border border-white/10 rounded-2xl p-4 text-center text-white outline-none focus:border-sky-500" autoFocus />
           <div className="flex gap-3">
             <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setModal({type:null}); }} className="flex-1 py-3.5 bg-white/5 rounded-full text-[11px] font-bold uppercase text-gray-400">Annulla</button>
             <button onClick={(e) => { 
@@ -172,7 +244,7 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
                 setRoutines((prev: any) => [r, ...(prev || [])]); 
                 setModal({ type: 'edit-routine', data: newId }); 
               } 
-            }} className="flex-1 py-3.5 bg-indigo-500 text-white rounded-full text-[11px] font-bold uppercase">Crea</button>
+            }} className="flex-1 py-3.5 bg-sky-500 text-white rounded-full text-[11px] font-bold uppercase">Crea</button>
           </div>
         </div>
       </div>
@@ -186,7 +258,7 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
           <p className="text-[15px] font-bold text-gray-200">{modal.data}</p>
           <div className="flex gap-3">
             <button onClick={(e) => { e.preventDefault(); setModal({type:null}); }} className="flex-1 py-3.5 bg-white/5 rounded-full text-[12px] font-bold uppercase text-gray-400">No</button>
-            <button onClick={(e) => { e.preventDefault(); modal.confirmAction(); setModal({type:null,data:null}); }} className="flex-1 py-3.5 bg-indigo-500 rounded-full text-[12px] font-bold uppercase text-white">Sì</button>
+            <button onClick={(e) => { e.preventDefault(); modal.confirmAction(); setModal({type:null,data:null}); }} className="flex-1 py-3.5 bg-sky-500 rounded-full text-[12px] font-bold uppercase text-white">Sì</button>
           </div>
         </div>
       </div>
@@ -201,7 +273,7 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
             <div className="min-w-0">
               <p className="text-gray-500 text-[10px] font-extrabold uppercase tracking-[0.3em]">Sessione</p>
               <h2 className="text-[1.8rem] font-black uppercase tracking-tight text-white truncate">{modal.data.name}</h2>
-              <p className="text-[11px] font-bold uppercase text-indigo-400 mt-1">
+              <p className="text-[11px] font-bold uppercase text-sky-400 mt-1">
                 {new Date(modal.data.date || modal.data.startTime || Date.now()).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })} {new Date(modal.data.date || modal.data.startTime || Date.now()).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })} • Vol {modal.data.vol || 0} • Durata {modal.data.duration || '--'}
               </p>
             </div>
@@ -224,7 +296,7 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
                 <div className="space-y-2">
                   {(ex.sets || []).map((s: any, sI: number) => (
                     <div key={sI} className="grid grid-cols-12 gap-2 items-center bg-[#1C1C21] border border-white/5 rounded-2xl px-3 py-2.5">
-                      <div className="col-span-1 text-indigo-400 font-black text-center text-sm">{sI+1}</div>
+                      <div className="col-span-1 text-sky-400 font-black text-center text-sm">{sI+1}</div>
                       <div className="col-span-3 text-center font-bold tabular-nums text-white">{s.kg || '--'} kg</div>
                       <div className="col-span-3 text-center font-bold tabular-nums text-white">{s.reps || '--'} reps</div>
                       <div className="col-span-2 text-center text-[10px] font-bold uppercase text-gray-500">{s.w ? 'W' : 'A'}</div>
@@ -256,7 +328,7 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
                 setActiveTab('workout');
                 setModal({type:null,data:null});
               }}
-              className="py-4 bg-indigo-500 text-white rounded-full font-bold uppercase text-[11px] tracking-wider active:scale-[0.98] shadow-lg"
+              className="py-4 bg-sky-500 text-white rounded-full font-bold uppercase text-[11px] tracking-wider active:scale-[0.98] shadow-lg"
             >
               Ripeti Workout
             </button>
@@ -289,7 +361,7 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
       <div className="fixed inset-0 z-[4000] bg-black/90 backdrop-blur-sm flex items-center justify-center p-6">
         <div className="bg-[#1C1C21] border border-white/10 p-8 w-full max-w-sm rounded-[2.5rem] space-y-6 shadow-2xl">
           <h2 className="text-[1.5rem] font-black uppercase text-center text-white">Rinomina</h2>
-          <input id="rename-in" type="text" defaultValue={modal.data.current} className="w-full text-lg font-bold bg-[#131316] border border-white/10 rounded-2xl p-4 text-center text-white outline-none focus:border-indigo-500" autoFocus />
+          <input id="rename-in" type="text" defaultValue={modal.data.current} className="w-full text-lg font-bold bg-[#131316] border border-white/10 rounded-2xl p-4 text-center text-white outline-none focus:border-sky-500" autoFocus />
           <div className="flex gap-3">
             <button onClick={(e) => { e.preventDefault(); setModal({type:null}); }} className="flex-1 py-3.5 bg-white/5 rounded-full text-[11px] font-bold uppercase text-gray-400">Annulla</button>
             <button onClick={(e) => { 
@@ -303,8 +375,72 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
                 }
                 setModal({type:null}); 
               } 
-            }} className="flex-1 py-3.5 bg-indigo-500 text-white rounded-full text-[11px] font-bold uppercase">Salva</button>
+            }} className="flex-1 py-3.5 bg-sky-500 text-white rounded-full text-[11px] font-bold uppercase">Salva</button>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (modal.type === 'workout-summary') {
+    const w = modal.data;
+    const durationMs = w.endTime - w.startTime;
+    const h = Math.floor(durationMs / 3600000).toString().padStart(2, '0');
+    const m = Math.floor((durationMs % 3600000) / 60000).toString().padStart(2, '0');
+    const s = Math.floor((durationMs % 60000) / 1000).toString().padStart(2, '0');
+    
+    let totalVol = 0;
+    let totalSets = 0;
+    (w.exercises || []).forEach((ex: any) => {
+      (ex.sets || []).forEach((set: any) => {
+        if (set.d && set.kg && set.reps) {
+          totalVol += (parseFloat(set.kg) * parseInt(set.reps));
+          totalSets++;
+        }
+      });
+    });
+
+    return (
+      <div className="fixed inset-0 z-[5000] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-6 animate-in zoom-in duration-300">
+        <div className="w-full max-w-sm flex flex-col items-center text-center space-y-8">
+          <div className="w-24 h-24 bg-sky-500/20 rounded-full flex items-center justify-center mb-4 relative">
+            <div className="absolute inset-0 bg-sky-500/20 rounded-full animate-ping" />
+            <Icon name="trophy" size={48} className="text-sky-400 relative z-10" />
+          </div>
+          
+          <div>
+            <h2 className="text-[2.5rem] font-black uppercase text-white leading-tight">Workout<br/>Completato!</h2>
+            <p className="text-sky-400 font-bold mt-2">{w.name}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 w-full">
+            <div className="bg-[#1C1C21] border border-white/10 rounded-3xl p-6 flex flex-col items-center">
+              <Icon name="clock" size={24} className="text-gray-400 mb-2" />
+              <span className="text-[2rem] font-black text-white">{h}:{m}</span>
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-gray-500 mt-1">Durata</span>
+            </div>
+            <div className="bg-[#1C1C21] border border-white/10 rounded-3xl p-6 flex flex-col items-center">
+              <Icon name="dumbbell" size={24} className="text-gray-400 mb-2" />
+              <span className="text-[2rem] font-black text-white">{totalVol}</span>
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-gray-500 mt-1">Kg Totali</span>
+            </div>
+          </div>
+
+          <div className="bg-[#1C1C21] border border-white/10 rounded-3xl p-6 w-full flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-sky-500/10 rounded-full flex items-center justify-center">
+                <Icon name="check-circle-2" size={20} className="text-sky-400" />
+              </div>
+              <div className="text-left">
+                <p className="text-white font-black text-lg">{totalSets}</p>
+                <p className="text-[10px] font-extrabold uppercase tracking-widest text-gray-500">Serie completate</p>
+              </div>
+            </div>
+          </div>
+
+          <button onClick={() => { setModal({type:null}); setActiveTab('home'); }} className="w-full py-5 bg-sky-500 text-white rounded-full font-black uppercase text-[14px] tracking-wider shadow-[0_10px_30px_rgba(14,165,233,0.3)] active:scale-95 transition-transform mt-8">
+            Torna alla Home
+          </button>
         </div>
       </div>
     );
