@@ -166,6 +166,7 @@ export const StatsView = ({ store, setModal }: any) => {
                     store.setHistory(Array.isArray(d.history) ? d.history : []);
                     store.setRoutines(Array.isArray(d.routines) ? d.routines : []);
                     store.setCustoms(d.customs || {});
+                    setModal({type:null});
                 }, data: "Sovrascrivere il database attuale con il backup?"});
               } catch(err) { alert("File backup non valido."); } finally { ev.target.value = ''; }
             }; reader.readAsText(file);

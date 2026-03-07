@@ -47,7 +47,7 @@ export const RoutinesView = ({ store, setActiveTab, setModal }: any) => {
                         <p className="text-[12px] font-bold text-gray-600">Nessun esercizio.</p>
                     )}
                 </div>
-                <button onClick={() => setModal({type:'confirm', confirmAction: () => setRoutines(routines.filter((_: any,idx: number)=>idx!==i)), data: `Eliminare ${r.name}?`})} className="text-gray-500 bg-white/5 p-2.5 rounded-full shrink-0 active:bg-red-500/20 active:text-red-400 transition-colors"><Icon name="trash-2" size={18}/></button>
+                <button onClick={() => setModal({type:'confirm', confirmAction: () => { setRoutines(routines.filter((_: any,idx: number)=>idx!==i)); setModal({type:null}); }, data: `Eliminare ${r.name}?`})} className="text-gray-500 bg-white/5 p-2.5 rounded-full shrink-0 active:bg-red-500/20 active:text-red-400 transition-colors"><Icon name="trash-2" size={18}/></button>
             </div>
             <div className="flex gap-3 pt-3">
               <button onClick={() => setModal({ type: 'edit-routine', data: r.id })} className="flex-1 bg-white/5 border border-white/10 py-4 rounded-full font-bold uppercase text-[11px] text-gray-300 active:bg-white/10">Modifica</button>

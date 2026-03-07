@@ -155,6 +155,7 @@ export const WorkoutView = ({ store, setActiveTab, setModal, sessionDuration, ti
     const completedWorkout = { ...activeWorkout, id: activeWorkout.id || genId(), vol, duration: sessionDuration, date: new Date().toISOString(), endTime: Date.now() };
     setHistory([...history, completedWorkout]);
     setActiveWorkout(null); 
+    setActiveTab('home');
     setModal({type: 'workout-summary', data: completedWorkout});
   };
 
@@ -162,7 +163,7 @@ export const WorkoutView = ({ store, setActiveTab, setModal, sessionDuration, ti
     <div className="space-y-6 view-animate pb-6 pt-8">
       <header className="sticky top-0 z-50 flex justify-between items-center gap-3 px-1 py-4 -mx-2 bg-[#000000]/80 backdrop-blur-xl rounded-b-3xl">
         <div className="w-1/4 pl-2">
-          <button onClick={() => setModal({type:'confirm', confirmAction: () => {setActiveWorkout(null); setActiveTab('home');}, data: "Annullare sessione?"})} className="text-gray-400 text-[11px] font-extrabold uppercase bg-white/5 px-4 py-2.5 rounded-full border border-white/10 active:bg-white/10 active:scale-95 transition-transform">Esci</button>
+          <button onClick={() => setModal({type:'confirm', confirmAction: () => {setActiveWorkout(null); setActiveTab('home'); setModal({type:null});}, data: "Annullare sessione?"})} className="text-gray-400 text-[11px] font-extrabold uppercase bg-white/5 px-4 py-2.5 rounded-full border border-white/10 active:bg-white/10 active:scale-95 transition-transform">Esci</button>
         </div>
         <div className="flex-1 text-center min-w-0">
           <div onClick={() => setModal({type:'rename', mode:'active', data:{ current: activeWorkout?.name || '' }})} className="inline-flex items-center justify-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full mb-2 active:bg-white/10 active:scale-95 transition-transform cursor-pointer">

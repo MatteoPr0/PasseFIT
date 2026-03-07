@@ -258,7 +258,7 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
           <p className="text-[15px] font-bold text-gray-200">{modal.data}</p>
           <div className="flex gap-3">
             <button onClick={(e) => { e.preventDefault(); setModal({type:null}); }} className="flex-1 py-3.5 bg-white/5 rounded-full text-[12px] font-bold uppercase text-gray-400">No</button>
-            <button onClick={(e) => { e.preventDefault(); modal.confirmAction(); setModal({type:null,data:null}); }} className="flex-1 py-3.5 bg-sky-500 rounded-full text-[12px] font-bold uppercase text-white">Sì</button>
+            <button onClick={(e) => { e.preventDefault(); modal.confirmAction(); }} className="flex-1 py-3.5 bg-sky-500 rounded-full text-[12px] font-bold uppercase text-white">Sì</button>
           </div>
         </div>
       </div>
