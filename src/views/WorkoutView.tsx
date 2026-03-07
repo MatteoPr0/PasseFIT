@@ -21,6 +21,22 @@ export const WorkoutView = ({ store, setActiveTab, setModal, sessionDuration, ti
     return past.slice(0, 3);
   };
 
+  const getLastPerformanceSummary = (exName: string) => {
+    const past = getExerciseHistory(exName);
+    if (past.length === 0) return null;
+    const lastWorkout = past[0];
+    const ex = lastWorkout.exercises.find((e: any) => (e.name || '').trim().toLowerCase() === (exName || '').trim().toLowerCase());
+    if (!ex || !ex.sets) return null;
+    const validSets = ex.sets.filter((s: any) => s.d && s.kg && s.reps);
+    if (validSets.length === 0) return null;
+    const bestSet = validSets.reduce((best: any, current: any) => {
+      const current1RM = parseFloat(current.kg) * (1 + parseInt(current.reps) / 30);
+      const best1RM = parseFloat(best.kg) * (1 + parseInt(best.reps) / 30);
+      return current1RM > best1RM ? current : best;
+    }, validSets[0]);
+    return `Ultima volta: ${validSets.length} serie (Max: ${bestSet.kg}kg x ${bestSet.reps})`;
+  };
+
   const computeOverIndex = (clientY: number) => {
       const refs = exCardRefs.current || [];
       let over = -1;
@@ -149,10 +165,38 @@ export const WorkoutView = ({ store, setActiveTab, setModal, sessionDuration, ti
   const finishWorkout = () => {
     if (!activeWorkout) return;
     let vol = 0;
-    (activeWorkout.exercises || []).forEach((ex: any) => (ex.sets || []).forEach((s: any) => {
-      if (!s.w && Number.isFinite(toNum(s.kg)) && Number.isFinite(toNum(s.reps)) && toNum(s.reps) > 0) vol += (toNum(s.kg) * toNum(s.reps));
-    }));
-    const completedWorkout = { ...activeWorkout, id: activeWorkout.id || genId(), vol, duration: sessionDuration, date: new Date().toISOString(), endTime: Date.now() };
+    let totalSets = 0;
+    const prs: any[] = [];
+    
+    (activeWorkout.exercises || []).forEach((ex: any) => {
+      const validSets = (ex.sets || []).filter((s: any) => s.d && s.kg && s.reps);
+      totalSets += validSets.length;
+      
+      validSets.forEach((s: any) => {
+        if (!s.w && Number.isFinite(toNum(s.kg)) && Number.isFinite(toNum(s.reps)) && toNum(s.reps) > 0) vol += (toNum(s.kg) * toNum(s.reps));
+      });
+
+      if (validSets.length > 0) {
+        const currentBest1RM = Math.max(...validSets.map((s: any) => parseFloat(s.kg) * (1 + parseInt(s.reps) / 30)));
+        let historicalBest1RM = 0;
+        history.forEach((h: any) => {
+          const pastEx = h.exercises?.find((e: any) => e.name === ex.name);
+          if (pastEx && pastEx.sets) {
+            pastEx.sets.forEach((s: any) => {
+              if (s.d && s.kg && s.reps) {
+                const e1rm = parseFloat(s.kg) * (1 + parseInt(s.reps) / 30);
+                if (e1rm > historicalBest1RM) historicalBest1RM = e1rm;
+              }
+            });
+          }
+        });
+        if (currentBest1RM > historicalBest1RM && historicalBest1RM > 0) {
+          prs.push({ name: ex.name, old1RM: historicalBest1RM, new1RM: currentBest1RM });
+        }
+      }
+    });
+    
+    const completedWorkout = { ...activeWorkout, id: activeWorkout.id || genId(), vol, sets: totalSets, prs, duration: sessionDuration, date: new Date().toISOString(), endTime: Date.now() };
     setHistory([...history, completedWorkout]);
     setActiveWorkout(null); 
     setActiveTab('home');
@@ -187,6 +231,9 @@ export const WorkoutView = ({ store, setActiveTab, setModal, sessionDuration, ti
               <div className="flex justify-between items-start gap-4">
                 <div className="flex-1 min-w-0">
                   <h3 onClick={() => { const nn = prompt("Rinomina esercizio", ex.name); if(nn){ const n=[...activeWorkout.exercises]; n[exI].name = nn.trim(); setActiveWorkout({...activeWorkout, exercises:n}); } }} className="text-[1.2rem] font-black uppercase text-white leading-tight break-words active:text-sky-300 cursor-pointer">{ex.name}</h3>
+                  {getLastPerformanceSummary(ex.name) && (
+                    <p className="text-[11px] font-bold text-sky-400 mt-0.5">{getLastPerformanceSummary(ex.name)}</p>
+                  )}
                   <div className="flex items-center gap-2 mt-2">
                     <div className="bg-black/40 inline-flex px-3 py-1.5 rounded-lg border border-white/5 items-center gap-2">
                       <Icon name="clock" size={12} className="text-sky-400" />

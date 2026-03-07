@@ -6,13 +6,22 @@ import { fmtWeekday, genId } from '../utils';
 export const HomeView = ({ store, setActiveTab, setModal }: any) => {
   const { history, activeWorkout, setActiveWorkout } = store;
 
+  const getSets = (h: any) => {
+    if (h.sets !== undefined) return h.sets;
+    let s = 0;
+    (h.exercises || []).forEach((ex: any) => {
+      (ex.sets || []).forEach((set: any) => { if (set.d) s++; });
+    });
+    return s;
+  };
+
   const acwr = useMemo(() => {
     if (!history.length) return "1.00";
     const daily = new Map();
     for (const h of history) {
       const day = (h.date || '').slice(0, 10);
       if (!day) continue;
-      daily.set(day, (daily.get(day) || 0) + (typeof h.vol === 'number' ? h.vol : 0));
+      daily.set(day, (daily.get(day) || 0) + getSets(h));
     }
     const days = [...daily.keys()].sort();
     const lastDay = days[days.length - 1];
@@ -33,15 +42,15 @@ export const HomeView = ({ store, setActiveTab, setModal }: any) => {
       const byDay: any = {};
       for (const h of history) {
           const k = keyLocal(new Date(h.date || h.startTime || Date.now()));
-          if (!byDay[k]) byDay[k] = { vol: 0, count: 0 };
-          byDay[k].vol += Number(h.vol || 0);
+          if (!byDay[k]) byDay[k] = { sets: 0, count: 0 };
+          byDay[k].sets += getSets(h);
           byDay[k].count += 1;
       }
       const out = [];
       for (let i = 13; i >= 0; i--) {
           const d = new Date(now); d.setHours(0,0,0,0); d.setDate(d.getDate() - i);
           const k = keyLocal(d);
-          out.push({ date: d, key: k, label: fmtWeekday(d), value: byDay[k]?.vol || 0, count: byDay[k]?.count || 0 });
+          out.push({ date: d, key: k, label: fmtWeekday(d), value: byDay[k]?.sets || 0, count: byDay[k]?.count || 0 });
       }
       let streak = 0;
       for (let i = out.length - 1; i >= 0; i--) { if (out[i].count > 0) streak++; else break; }
@@ -78,8 +87,8 @@ export const HomeView = ({ store, setActiveTab, setModal }: any) => {
           </div>
         </div>
         <div className="surface-card p-5 rounded-[2rem] shadow-lg flex flex-col justify-center">
-          <p className="text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-widest truncate">Last Vol</p>
-          <span className="text-[2rem] font-black tabular-nums leading-none truncate">{history[history.length-1]?.vol || 0}</span>
+          <p className="text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-widest truncate">Ultime Serie</p>
+          <span className="text-[2rem] font-black tabular-nums leading-none truncate">{history.length ? getSets(history[history.length-1]) : 0}</span>
         </div>
       
         <div className="col-span-2 surface-card p-6 rounded-[2.2rem] shadow-xl">
@@ -123,7 +132,7 @@ export const HomeView = ({ store, setActiveTab, setModal }: any) => {
             <div key={h.id || i} onClick={() => setModal({type:'history', data:h})} className="surface-card p-5 rounded-[1.8rem] flex justify-between items-center active:bg-white/5 transition-all cursor-pointer">
               <div className="min-w-0 flex-1">
                 <p className="font-bold text-[15px] text-gray-100 truncate pr-2">{h.name}</p>
-                <p className="text-[11px] font-bold text-gray-500 mt-1 uppercase tracking-wider">{dateStr} {timeStr} • {h.vol} KG • {h.duration || '--'}</p>
+                <p className="text-[11px] font-bold text-gray-500 mt-1 uppercase tracking-wider">{dateStr} {timeStr} • {getSets(h)} Serie • {h.duration || '--'}</p>
               </div>
               <Icon name="chevron-right" className="text-gray-600" size={20} />
             </div>

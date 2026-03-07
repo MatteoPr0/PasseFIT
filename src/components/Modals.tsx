@@ -274,7 +274,7 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
               <p className="text-gray-500 text-[10px] font-extrabold uppercase tracking-[0.3em]">Sessione</p>
               <h2 className="text-[1.8rem] font-black uppercase tracking-tight text-white truncate">{modal.data.name}</h2>
               <p className="text-[11px] font-bold uppercase text-sky-400 mt-1">
-                {new Date(modal.data.date || modal.data.startTime || Date.now()).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })} {new Date(modal.data.date || modal.data.startTime || Date.now()).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })} • Vol {modal.data.vol || 0} • Durata {modal.data.duration || '--'}
+                {new Date(modal.data.date || modal.data.startTime || Date.now()).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })} {new Date(modal.data.date || modal.data.startTime || Date.now()).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })} • Serie {modal.data.sets || 0} • Durata {modal.data.duration || '--'}
               </p>
             </div>
             <button onClick={(e) => { e.preventDefault(); setModal({type:null}); }} className="w-12 h-12 bg-white/5 border border-white/10 rounded-full flex items-center justify-center text-white active:bg-white/10 shrink-0">
@@ -389,16 +389,16 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
     const m = Math.floor((durationMs % 3600000) / 60000).toString().padStart(2, '0');
     const s = Math.floor((durationMs % 60000) / 1000).toString().padStart(2, '0');
     
-    let totalVol = 0;
-    let totalSets = 0;
-    (w.exercises || []).forEach((ex: any) => {
-      (ex.sets || []).forEach((set: any) => {
-        if (set.d && set.kg && set.reps) {
-          totalVol += (parseFloat(set.kg) * parseInt(set.reps));
-          totalSets++;
-        }
+    let totalSets = w.sets || 0;
+    if (!totalSets) {
+      (w.exercises || []).forEach((ex: any) => {
+        (ex.sets || []).forEach((set: any) => {
+          if (set.d) totalSets++;
+        });
       });
-    });
+    }
+    
+    const prs = w.prs || [];
 
     return (
       <div className="fixed inset-0 z-[5000] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-6 animate-in zoom-in duration-300">
@@ -420,23 +420,28 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
               <span className="text-[10px] font-extrabold uppercase tracking-widest text-gray-500 mt-1">Durata</span>
             </div>
             <div className="bg-[#1C1C21] border border-white/10 rounded-3xl p-6 flex flex-col items-center">
-              <Icon name="dumbbell" size={24} className="text-gray-400 mb-2" />
-              <span className="text-[2rem] font-black text-white">{totalVol}</span>
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-gray-500 mt-1">Kg Totali</span>
+              <Icon name="check-circle-2" size={24} className="text-gray-400 mb-2" />
+              <span className="text-[2rem] font-black text-white">{totalSets}</span>
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-gray-500 mt-1">Serie Allenanti</span>
             </div>
           </div>
 
-          <div className="bg-[#1C1C21] border border-white/10 rounded-3xl p-6 w-full flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-sky-500/10 rounded-full flex items-center justify-center">
-                <Icon name="check-circle-2" size={20} className="text-sky-400" />
+          {prs.length > 0 && (
+            <div className="bg-[#1C1C21] border border-amber-500/20 rounded-3xl p-6 w-full text-left">
+              <div className="flex items-center gap-2 mb-3">
+                <Icon name="zap" size={18} className="text-amber-400" />
+                <h3 className="text-[12px] font-black uppercase text-amber-400 tracking-widest">Nuovi Record (1RM)</h3>
               </div>
-              <div className="text-left">
-                <p className="text-white font-black text-lg">{totalSets}</p>
-                <p className="text-[10px] font-extrabold uppercase tracking-widest text-gray-500">Serie completate</p>
+              <div className="space-y-2">
+                {prs.map((pr: any, i: number) => (
+                  <div key={i} className="flex justify-between items-center bg-black/30 p-3 rounded-2xl">
+                    <span className="text-[13px] font-bold text-white truncate pr-2">{pr.name}</span>
+                    <span className="text-[13px] font-black text-amber-400 whitespace-nowrap">{Math.round(pr.new1RM)} kg</span>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
+          )}
 
           <button onClick={() => { setModal({type:null}); setActiveTab('home'); }} className="w-full py-5 bg-sky-500 text-white rounded-full font-black uppercase text-[14px] tracking-wider shadow-[0_10px_30px_rgba(14,165,233,0.3)] active:scale-95 transition-transform mt-8">
             Torna alla Home

@@ -1,9 +1,9 @@
 import React, { useRef, useState, useMemo } from 'react';
 import { Icon } from '../components/ui/Icon';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 export const StatsView = ({ store, setModal }: any) => {
-  const { history, routines, customs } = store;
+  const { history, routines, customs, muscleMap } = store;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedEx, setSelectedEx] = useState<string>('');
 
@@ -97,12 +97,79 @@ export const StatsView = ({ store, setModal }: any) => {
     URL.revokeObjectURL(url);
   };
 
+  const categoryData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    
+    history.filter((h: any) => (h.startTime || Date.parse(h.date)) > thirtyDaysAgo).forEach((h: any) => {
+      (h.exercises || []).forEach((ex: any) => {
+        const cat = muscleMap[ex.name.toLowerCase()] || 'Altro';
+        const validSets = (ex.sets || []).filter((s: any) => s.d).length;
+        if (validSets > 0) {
+          counts[cat] = (counts[cat] || 0) + validSets;
+        }
+      });
+    });
+    
+    return Object.entries(counts).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value);
+  }, [history, muscleMap]);
+
+  const COLORS = ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#64748b', '#a8a29e'];
+
   return (
     <div className="space-y-8 pt-8 view-animate pb-12 text-left">
       <header className="sticky top-0 z-50 px-2 py-4 -mx-2 bg-[#000000]/80 backdrop-blur-xl rounded-b-3xl">
         <h1 className="text-[2.5rem] font-black tracking-tight text-white pl-2">Dati</h1>
       </header>
       
+      {historyExercises.length > 0 && (
+        <div className="surface-card p-6 rounded-[2.2rem] space-y-6 shadow-lg">
+          <h3 className="text-[11px] font-extrabold uppercase text-sky-400 tracking-[0.2em]">Distribuzione Muscolare (30gg)</h3>
+          
+          {categoryData.length > 0 ? (
+            <div className="flex flex-col items-center">
+              <div className="h-48 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={categoryData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {categoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#1C1C21', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '1rem', fontSize: '12px', fontWeight: 'bold' }}
+                      itemStyle={{ color: '#fff' }}
+                      formatter={(value: number) => [`${value} Serie`, '']}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex flex-wrap justify-center gap-3 mt-4">
+                {categoryData.map((entry, index) => (
+                  <div key={entry.name} className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                    <span className="text-[11px] font-bold text-gray-300 uppercase tracking-wider">{entry.name} ({entry.value})</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="h-32 flex items-center justify-center text-gray-500 text-xs font-bold uppercase">
+              Dati insufficienti
+            </div>
+          )}
+        </div>
+      )}
+
       {historyExercises.length > 0 && (
         <div className="surface-card p-6 rounded-[2.2rem] space-y-6 shadow-lg">
           <h3 className="text-[11px] font-extrabold uppercase text-sky-400 tracking-[0.2em]">Progressione Esercizi</h3>
