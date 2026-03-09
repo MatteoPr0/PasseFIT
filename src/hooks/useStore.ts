@@ -3,37 +3,50 @@ import * as idbKeyval from 'idb-keyval';
 import { genId, deepClone } from '../utils';
 import { INITIAL_LIB } from '../constants';
 import { WorkoutData, RoutineData, CustomExercises } from '../types';
+import { auth, db } from '../firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 
 export const useStore = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+
   const [history, setHistory] = useState<WorkoutData[]>([]);
   const [routines, setRoutines] = useState<RoutineData[]>([]);
   const [customs, setCustoms] = useState<CustomExercises>({});
   const [activeWorkout, setActiveWorkout] = useState<WorkoutData | null>(null);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
+  // Auth listener
   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setIsAuthReady(true);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthReady) return;
+    if (!user) {
+      setIsDataLoaded(false);
+      return;
+    }
+
     const loadAndMigrateData = async () => {
       try {
+        const userDocRef = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(userDocRef);
+
         let storedHistory = await idbKeyval.get('af_v57_h');
         let storedRoutines = await idbKeyval.get('af_v57_r');
         let storedCustoms = await idbKeyval.get('af_v57_c');
         let storedActiveWorkout = await idbKeyval.get('af_v57_aw');
 
-        if (storedHistory === undefined) {
-          storedHistory = JSON.parse(localStorage.getItem('af_v57_h') || '[]');
-          if (storedHistory.length > 0) await idbKeyval.set('af_v57_h', storedHistory);
-        }
-        if (storedRoutines === undefined) {
-          storedRoutines = JSON.parse(localStorage.getItem('af_v57_r') || '[]');
-          if (storedRoutines.length > 0) await idbKeyval.set('af_v57_r', storedRoutines);
-        }
-        if (storedCustoms === undefined) {
-          storedCustoms = JSON.parse(localStorage.getItem('af_v57_c') || 'null');
-        }
-        if (storedActiveWorkout === undefined) {
-          storedActiveWorkout = JSON.parse(localStorage.getItem('af_v57_aw') || 'null');
-          if (storedActiveWorkout) await idbKeyval.set('af_v57_aw', storedActiveWorkout);
-        }
+        if (storedHistory === undefined) storedHistory = JSON.parse(localStorage.getItem('af_v57_h') || '[]');
+        if (storedRoutines === undefined) storedRoutines = JSON.parse(localStorage.getItem('af_v57_r') || '[]');
+        if (storedCustoms === undefined) storedCustoms = JSON.parse(localStorage.getItem('af_v57_c') || 'null');
+        if (storedActiveWorkout === undefined) storedActiveWorkout = JSON.parse(localStorage.getItem('af_v57_aw') || 'null');
 
         let libraryToSet = storedCustoms || {};
         const isOldCustoms = !libraryToSet["Petto"] || libraryToSet["Petto"].length < 5;
@@ -55,49 +68,67 @@ export const useStore = () => {
             }).sort((a: string,b: string)=>a.localeCompare(b,'it',{sensitivity:'base'}));
         });
 
-        if (isOldCustoms) await idbKeyval.set('af_v57_c', libraryToSet);
-
         let historyToSet = storedHistory || [];
-        let changed = false;
         const normalizedHistory = historyToSet.map((w: any) => {
           if (w && w.id) return w;
-          changed = true;
           return { ...w, id: genId() };
         });
-        if (changed) { historyToSet = normalizedHistory; await idbKeyval.set('af_v57_h', historyToSet); }
+        historyToSet = normalizedHistory;
 
-        setHistory(historyToSet);
-        setRoutines(storedRoutines || []);
-        setCustoms(libraryToSet);
-        setActiveWorkout(storedActiveWorkout || null);
+        if (!docSnap.exists()) {
+          // Migrate local data to Firestore
+          await setDoc(userDocRef, {
+            history: JSON.stringify(historyToSet),
+            routines: JSON.stringify(storedRoutines || []),
+            customs: JSON.stringify(libraryToSet),
+            activeWorkout: JSON.stringify(storedActiveWorkout || null)
+          });
+        }
       } catch (error) { 
-        console.error("Errore IndexedDB:", error); 
-      } finally { 
-        setIsDataLoaded(true); 
+        console.error("Errore migrazione:", error); 
       }
     };
-    loadAndMigrateData();
-  }, []);
 
-  useEffect(() => {
-    if (!isDataLoaded) return;
-    idbKeyval.set('af_v57_h', history);
-  }, [history, isDataLoaded]);
+    loadAndMigrateData().then(() => {
+      const userDocRef = doc(db, 'users', user.uid);
+      const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          try {
+            setHistory(JSON.parse(data.history || '[]'));
+            setRoutines(JSON.parse(data.routines || '[]'));
+            setCustoms(JSON.parse(data.customs || '{}'));
+            setActiveWorkout(JSON.parse(data.activeWorkout || 'null'));
+          } catch (e) {
+            console.error("Error parsing firestore data", e);
+          }
+        }
+        setIsDataLoaded(true);
+      }, (error) => {
+        console.error("Firestore Error: ", error);
+      });
 
-  useEffect(() => {
-    if (!isDataLoaded) return;
-    idbKeyval.set('af_v57_r', routines);
-  }, [routines, isDataLoaded]);
+      return () => unsubscribe();
+    });
+  }, [user, isAuthReady]);
 
+  // Sync to Firestore when state changes
   useEffect(() => {
-    if (!isDataLoaded) return;
-    idbKeyval.set('af_v57_c', customs);
-  }, [customs, isDataLoaded]);
-
-  useEffect(() => {
-    if (!isDataLoaded) return;
-    idbKeyval.set('af_v57_aw', activeWorkout);
-  }, [activeWorkout, isDataLoaded]);
+    if (!isDataLoaded || !user) return;
+    const syncData = async () => {
+      try {
+        await setDoc(doc(db, 'users', user.uid), {
+          history: JSON.stringify(history),
+          routines: JSON.stringify(routines),
+          customs: JSON.stringify(customs),
+          activeWorkout: JSON.stringify(activeWorkout)
+        }, { merge: true });
+      } catch (error) {
+        console.error("Error syncing to firestore", error);
+      }
+    };
+    syncData();
+  }, [history, routines, customs, activeWorkout, isDataLoaded, user]);
 
   const mergedLibrary = useMemo(() => {
     return customs;
@@ -126,6 +157,7 @@ export const useStore = () => {
   }, [history]);
 
   return {
+    user, isAuthReady,
     history, setHistory,
     routines, setRoutines,
     customs, setCustoms,

@@ -1,6 +1,8 @@
 import React, { useRef, useState, useMemo } from 'react';
 import { Icon } from '../components/ui/Icon';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { auth } from '../firebase';
+import { signOut } from 'firebase/auth';
 
 export const StatsView = ({ store, setModal }: any) => {
   const { history, routines, customs, muscleMap } = store;
@@ -238,7 +240,17 @@ export const StatsView = ({ store, setModal }: any) => {
               } catch(err) { alert("File backup non valido."); } finally { ev.target.value = ''; }
             }; reader.readAsText(file);
           }} className="hidden" accept=".json" />
-          <p className="text-[10px] font-bold uppercase text-gray-500 tracking-widest text-center pt-2">Storage Sicuro: IndexedDB</p>
+          
+          <button onClick={() => {
+            setModal({type:'confirm', confirmAction: async () => {
+              await signOut(auth);
+              setModal({type:null});
+            }, data: "Vuoi davvero uscire dal tuo account?"});
+          }} className="w-full bg-red-500/10 text-red-500 py-4 rounded-full font-bold uppercase text-[12px] flex items-center justify-center gap-3 active:bg-red-500/20 mt-4">
+            <Icon name="log-out" size={18} /> Disconnetti
+          </button>
+          
+          <p className="text-[10px] font-bold uppercase text-gray-500 tracking-widest text-center pt-2">Storage Sicuro: Cloud (Firebase)</p>
         </div>
       </div>
     </div>

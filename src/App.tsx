@@ -5,6 +5,7 @@ import { HomeView } from './views/HomeView';
 import { WorkoutView } from './views/WorkoutView';
 import { RoutinesView } from './views/RoutinesView';
 import { StatsView } from './views/StatsView';
+import { LoginView } from './views/LoginView';
 import { Modals } from './components/Modals';
 import { AnimatePresence, motion } from 'motion/react';
 
@@ -88,6 +89,19 @@ export default function App() {
     }, 1000);
     return () => clearInterval(interval);
   }, [store.activeWorkout?.startTime, isTimerOpen]);
+
+  if (!store.isAuthReady) {
+    return (
+      <div className="min-h-screen bg-[#000000] flex flex-col items-center justify-center p-6 space-y-4">
+        <Icon name="loader-2" size={32} className="text-sky-500 animate-spin" />
+        <div className="text-gray-400 text-xs font-bold uppercase tracking-[0.2em] animate-pulse">Caricamento...</div>
+      </div>
+    );
+  }
+
+  if (!store.user) {
+    return <LoginView />;
+  }
 
   if (!store.isDataLoaded) {
     return (

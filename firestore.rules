@@ -1,0 +1,46 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId} (matches request.auth.uid)
+    // Fields:
+    //   - history: string (JSON stringified array)
+    //   - routines: string (JSON stringified array)
+    //   - customs: string (JSON stringified object)
+    //   - activeWorkout: string (JSON stringified object or null)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidUserDoc() {
+      let data = request.resource.data;
+      return data.keys().hasOnly(['history', 'routines', 'customs', 'activeWorkout']) &&
+             (!('history' in data) || data.history is string) &&
+             (!('routines' in data) || data.routines is string) &&
+             (!('customs' in data) || data.customs is string) &&
+             (!('activeWorkout' in data) || data.activeWorkout is string);
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUserDoc();
+      allow update: if isOwner(userId) && isValidUserDoc();
+      allow delete: if isOwner(userId);
+    }
+  }
+}

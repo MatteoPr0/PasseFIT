@@ -1,0 +1,33 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the application",
+      "type": "object",
+      "properties": {
+        "history": {
+          "type": "string",
+          "description": "JSON stringified array of WorkoutData"
+        },
+        "routines": {
+          "type": "string",
+          "description": "JSON stringified array of RoutineData"
+        },
+        "customs": {
+          "type": "string",
+          "description": "JSON stringified object of CustomExercises"
+        },
+        "activeWorkout": {
+          "type": "string",
+          "description": "JSON stringified WorkoutData or null"
+        }
+      }
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "User data including history, routines, and custom exercises"
+    }
+  }
+}
