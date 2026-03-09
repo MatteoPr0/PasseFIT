@@ -187,7 +187,6 @@ export default function App() {
         <div className="bg-[#1C1C21]/90 backdrop-blur-xl border border-white/10 p-2 rounded-full flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.8)] relative">
           <motion.div 
             className="absolute top-2 bottom-2 bg-sky-500 rounded-full shadow-md"
-            layoutId="activeTabIndicator"
             initial={false}
             animate={{
               width: 'calc(33.333% - 5.33px)',

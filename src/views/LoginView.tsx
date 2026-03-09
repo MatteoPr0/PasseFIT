@@ -11,9 +11,13 @@ export const LoginView = () => {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Errore durante il login:", error);
-      setError("Errore durante il login. Riprova.");
+      if (error.code === 'auth/unauthorized-domain') {
+        setError(`Dominio non autorizzato. Devi aggiungere "${window.location.hostname}" ai domini autorizzati nella console di Firebase (Authentication > Settings > Authorized domains).`);
+      } else {
+        setError(`Errore: ${error.message || "Riprova più tardi."}`);
+      }
     }
   };
 
