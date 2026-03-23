@@ -322,36 +322,7 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
               <Icon name="x" size={24}/>
             </button>
           </div>
-          <div className="surface-card p-6 rounded-[2.2rem] space-y-6 shadow-xl">
-            {(modal.data.exercises || []).map((ex: any, exI: number) => (
-              <div key={exI} className="space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h3 className="text-[15px] font-black uppercase text-white tracking-tight truncate">{ex.name}</h3>
-                    {ex.originalName && (
-                      <p className="text-[10px] font-bold text-amber-500 mt-0.5 uppercase tracking-wider">Sostituisce: {ex.originalName}</p>
-                    )}
-                    {ex.notes ? <p className="text-[12px] text-gray-400 whitespace-pre-wrap mt-1">{ex.notes}</p> : null}
-                  </div>
-                  <div className="text-[10px] font-bold uppercase text-gray-500 whitespace-nowrap bg-white/5 px-2 py-1 rounded-lg">
-                    Rest {ex.rest || 90}s
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  {(ex.sets || []).map((s: any, sI: number) => (
-                    <div key={sI} className="grid grid-cols-12 gap-2 items-center bg-[#1C1C21] border border-white/5 rounded-2xl px-3 py-2.5">
-                      <div className="col-span-1 text-sky-400 font-black text-center text-sm">{sI+1}</div>
-                      <div className="col-span-3 text-center font-bold tabular-nums text-white">{s.kg || '--'} kg</div>
-                      <div className="col-span-3 text-center font-bold tabular-nums text-white">{s.reps || '--'} reps</div>
-                      <div className="col-span-2 text-center text-[10px] font-bold uppercase text-gray-500">{s.w ? 'W' : 'A'}</div>
-                      <div className="col-span-3 text-left text-[11px] text-gray-400 truncate">{s.note || ''}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-2 gap-3 mt-4">
+          <div className="grid grid-cols-2 gap-3 mt-2 mb-4">
             <button
               onClick={(e) => {
                 e.preventDefault();
@@ -383,6 +354,37 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
             >
               Rinomina
             </button>
+          </div>
+          <div className="surface-card p-6 rounded-[2.2rem] space-y-6 shadow-xl">
+            {(modal.data.exercises || []).map((ex: any, exI: number) => (
+              <div key={exI} className="space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="text-[15px] font-black uppercase text-white tracking-tight truncate">{ex.name}</h3>
+                    {ex.originalName && (
+                      <p className="text-[10px] font-bold text-amber-500 mt-0.5 uppercase tracking-wider">Sostituisce: {ex.originalName}</p>
+                    )}
+                    {ex.notes ? <p className="text-[12px] text-gray-400 whitespace-pre-wrap mt-1">{ex.notes}</p> : null}
+                  </div>
+                  <div className="text-[10px] font-bold uppercase text-gray-500 whitespace-nowrap bg-white/5 px-2 py-1 rounded-lg">
+                    Rest {ex.rest || 90}s
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {(ex.sets || []).map((s: any, sI: number) => (
+                    <div key={sI} className="grid grid-cols-12 gap-2 items-center bg-[#1C1C21] border border-white/5 rounded-2xl px-3 py-2.5">
+                      <div className="col-span-1 text-sky-400 font-black text-center text-sm">{sI+1}</div>
+                      <div className="col-span-3 text-center font-bold tabular-nums text-white">{s.kg || '--'} kg</div>
+                      <div className="col-span-3 text-center font-bold tabular-nums text-white">{s.reps || '--'} reps</div>
+                      <div className="col-span-2 text-center text-[10px] font-bold uppercase text-gray-500">{s.w ? 'W' : 'A'}</div>
+                      <div className="col-span-3 text-left text-[11px] text-gray-400 truncate">{s.note || ''}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4">
             <button
               onClick={(e) => {
                 e.preventDefault();
@@ -391,7 +393,7 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
                   setModal({type:null,data:null});
                 }, data: "Eliminare questo allenamento dalla cronologia?"});
               }}
-              className="col-span-2 py-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-full font-bold uppercase text-[11px] tracking-wider active:bg-red-500/20 mt-2"
+              className="w-full py-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-full font-bold uppercase text-[11px] tracking-wider active:bg-red-500/20"
             >
               Elimina
             </button>
