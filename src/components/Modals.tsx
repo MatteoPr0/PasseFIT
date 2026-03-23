@@ -96,13 +96,41 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
     return (
       <div className="fixed inset-0 z-[3000] bg-[#000000]/98 backdrop-blur-xl p-5 flex flex-col overflow-y-auto animate-in fade-in">
         <div className="flex justify-between items-center mb-6 pt-4">
-          <h2 className="text-[2rem] font-black uppercase text-white tracking-tight">Libreria</h2>
+          <h2 className="text-[2rem] font-black uppercase text-white tracking-tight">
+            {modal.target === 'replace' ? 'Sostituisci' : 'Libreria'}
+          </h2>
           <div className="flex gap-2">
             <button onClick={(e) => { e.preventDefault(); setEditMode(!editMode); }} className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-colors ${editMode ? 'bg-amber-500 text-white' : 'bg-white/10 text-gray-400'}`}><Icon name="pencil" size={20}/></button>
             <button onClick={(e) => { e.preventDefault(); setEditMode(false); setModal(modal?.target === 'routine' ? { type: 'edit-routine', data: modal.data } : {type:null}); }} className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-white shrink-0"><Icon name="x" size={24}/></button>
           </div>
         </div>
         
+        {modal.target === 'replace' && modal.originalName && (
+          <button 
+            onClick={(e) => {
+              e.preventDefault();
+              setActiveWorkout((prev: any) => {
+                if (!prev) return prev;
+                const n = [...prev.exercises];
+                const oldEx = n[modal.exIndex];
+                n[modal.exIndex] = {
+                  ...oldEx,
+                  name: modal.originalName,
+                  originalName: undefined
+                };
+                return { ...prev, exercises: n };
+              });
+              setModal({type: null});
+            }}
+            className="mb-6 w-full bg-sky-500/20 border border-sky-500/30 rounded-3xl px-5 py-4 flex items-center justify-between text-left active:bg-sky-500/30 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Icon name="rotate-ccw" size={20} className="text-sky-400" />
+              <span className="text-[12px] font-bold uppercase tracking-widest text-sky-400">Ripristina: {modal.originalName}</span>
+            </div>
+          </button>
+        )}
+
         <div className="relative mb-6">
           <Icon name="search" size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" />
           <input type="text" placeholder="Cerca esercizio..." className="w-full pl-14 pr-6 py-4 bg-[#1C1C21] border border-white/10 rounded-full text-[15px] font-bold text-white outline-none focus:border-sky-500" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
@@ -146,6 +174,19 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
                           if (modal?.target === 'routine') {
                             safeAddExerciseToRoutine(modal.data, ex);
                             setModal({ type: 'edit-routine', data: modal.data });
+                          } else if (modal?.target === 'replace') {
+                            setActiveWorkout((prev: any) => {
+                              if (!prev) return prev;
+                              const n = [...prev.exercises];
+                              const oldEx = n[modal.exIndex];
+                              n[modal.exIndex] = {
+                                ...oldEx,
+                                name: ex,
+                                originalName: oldEx.originalName || oldEx.name
+                              };
+                              return { ...prev, exercises: n };
+                            });
+                            setModal({type: null});
                           } else {
                             safeAddExerciseToActive(ex);
                             setModal({type: null});
@@ -287,6 +328,9 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <h3 className="text-[15px] font-black uppercase text-white tracking-tight truncate">{ex.name}</h3>
+                    {ex.originalName && (
+                      <p className="text-[10px] font-bold text-amber-500 mt-0.5 uppercase tracking-wider">Sostituisce: {ex.originalName}</p>
+                    )}
                     {ex.notes ? <p className="text-[12px] text-gray-400 whitespace-pre-wrap mt-1">{ex.notes}</p> : null}
                   </div>
                   <div className="text-[10px] font-bold uppercase text-gray-500 whitespace-nowrap bg-white/5 px-2 py-1 rounded-lg">
@@ -319,6 +363,7 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
                   startTime: Date.now(),
                   exercises: (src.exercises || []).map((e: any) => ({
                     name: e.name,
+                    originalName: e.originalName,
                     rest: e.rest || 90,
                     notes: "",
                     sets: Array.from({ length: Math.max(1, (e.sets || []).length) }, () => ({ kg: '', reps: '', note: '', w: false, d: false }))

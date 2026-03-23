@@ -231,6 +231,9 @@ export const WorkoutView = ({ store, setActiveTab, setModal, sessionDuration, ti
               <div className="flex justify-between items-start gap-4">
                 <div className="flex-1 min-w-0">
                   <h3 onClick={() => { const nn = prompt("Rinomina esercizio", ex.name); if(nn){ const n=[...activeWorkout.exercises]; n[exI].name = nn.trim(); setActiveWorkout({...activeWorkout, exercises:n}); } }} className="text-[1.2rem] font-black uppercase text-white leading-tight break-words active:text-sky-300 cursor-pointer">{ex.name}</h3>
+                  {ex.originalName && (
+                    <p className="text-[10px] font-bold text-amber-500 mt-1 uppercase tracking-wider">Sostituisce: {ex.originalName}</p>
+                  )}
                   {getLastPerformanceSummary(ex.name) && (
                     <p className="text-[11px] font-bold text-sky-400 mt-0.5">{getLastPerformanceSummary(ex.name)}</p>
                   )}
@@ -249,6 +252,13 @@ export const WorkoutView = ({ store, setActiveTab, setModal, sessionDuration, ti
                         <span className={`text-[10px] font-extrabold uppercase tracking-wider ${expandedHistory[exI] ? "text-sky-400" : "text-gray-400"}`}>Storico</span>
                       </button>
                     )}
+                    <button 
+                      onClick={() => setModal({ type: 'exercise-select', target: 'replace', exIndex: exI, originalName: ex.originalName })}
+                      className="bg-black/40 inline-flex px-3 py-1.5 rounded-lg border border-white/5 items-center gap-2 transition-colors active:bg-sky-500/20"
+                    >
+                      <Icon name="refresh-cw" size={12} className="text-sky-400" />
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-sky-400">Sostituisci</span>
+                    </button>
                   </div>
                 </div>
                 <div className="flex flex-col items-center gap-2">

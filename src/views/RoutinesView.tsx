@@ -6,9 +6,38 @@ export const RoutinesView = ({ store, setActiveTab, setModal }: any) => {
   const { routines, setRoutines, muscleMap, setActiveWorkout } = store;
 
   const startWorkout = (r: any = null) => {
+    let initialExercises = [];
+    if (r) {
+      // Find the last history entry with the same name to copy replacements
+      const lastHistory = [...store.history].reverse().find((h: any) => h.name === r.name);
+      
+      initialExercises = (r.exs || []).map((e: any) => {
+        const exName = typeof e === 'string' ? e : e?.name || '';
+        let finalName = exName;
+        let originalName = undefined;
+        
+        if (lastHistory) {
+          // Check if this exercise was replaced in the last history entry
+          const historyEx = lastHistory.exercises?.find((he: any) => he.originalName === exName || (!he.originalName && he.name === exName));
+          if (historyEx && historyEx.originalName === exName) {
+            finalName = historyEx.name;
+            originalName = exName;
+          }
+        }
+        
+        return { 
+          name: finalName, 
+          originalName,
+          rest: 90, 
+          notes: "", 
+          sets: [{ kg: '', reps: '', note: '', w: false, d: false }] 
+        };
+      });
+    }
+
     setActiveWorkout({
       id: genId(), name: r ? r.name : "Sessione Libera", date: new Date().toISOString(), startTime: Date.now(),
-      exercises: r ? (r.exs || []).map((e: any) => ({ name: (typeof e === 'string' ? e : e?.name || ''), rest: 90, notes: "", sets: [{ kg: '', reps: '', note: '', w: false, d: false }] })) : []
+      exercises: initialExercises
     });
     setActiveTab('workout');
     if (!r) setModal({ type: 'exercise-select', mode: 'active', routineExs: [] });

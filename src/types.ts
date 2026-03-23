@@ -9,6 +9,7 @@ export interface SetData {
 export interface ExerciseData {
   id: string;
   name: string;
+  originalName?: string;
   notes?: string;
   sets: SetData[];
 }
