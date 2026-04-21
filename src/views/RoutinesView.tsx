@@ -28,6 +28,7 @@ export const RoutinesView = ({ store, setActiveTab, setModal }: any) => {
         return { 
           name: finalName, 
           originalName,
+          supersetId: typeof e === 'object' ? e.supersetId : undefined,
           rest: 90, 
           notes: "", 
           sets: [{ kg: '', reps: '', note: '', w: false, d: false }] 
@@ -57,8 +58,8 @@ export const RoutinesView = ({ store, setActiveTab, setModal }: any) => {
                     {r.exs && r.exs.length > 0 ? (
                         <div className="space-y-2">
                             {Object.entries(
-                                r.exs.reduce((acc: any, ex: string) => {
-                                    const safeEx = ex || '';
+                                r.exs.reduce((acc: any, ex: any) => {
+                                    const safeEx = typeof ex === 'string' ? ex : ex?.name || '';
                                     if(!safeEx) return acc;
                                     const cat = muscleMap[safeEx.toLowerCase()] || 'Altro';
                                     if (!acc[cat]) acc[cat] = [];

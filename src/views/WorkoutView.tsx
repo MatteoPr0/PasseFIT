@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Icon } from '../components/ui/Icon';
 import { EtherInput, NoteArea } from '../components/ui/Shared';
-import { deepClone, genId, toNum } from '../utils';
+import { deepClone, genId, toNum, toggleSupersetAction } from '../utils';
 
 export const WorkoutView = ({ store, setActiveTab, setModal, sessionDuration, timerEndTimeRef, setTimerVal, setIsTimerOpen }: any) => {
   const { activeWorkout, setActiveWorkout, history, setHistory, lastByExercise } = store;
@@ -221,109 +221,180 @@ export const WorkoutView = ({ store, setActiveTab, setModal, sessionDuration, ti
         </div>
       </header>
 
-      <div className="space-y-5 text-left">
-        {activeWorkout.exercises.map((ex: any, exI: number) => {
-          const isCompleted = ex.sets.every((s: any) => s.d);
-          const isActive = !isCompleted && (exI === 0 || activeWorkout.exercises.slice(0, exI).every((prevEx: any) => prevEx.sets.every((s: any) => s.d)));
-          
-          return (
-            <div key={exI} ref={(el)=>{exCardRefs.current[exI]=el;}} className={`surface-card p-5 rounded-3xl space-y-4 shadow-lg transition-all duration-300 ${dragUI.active && dragUI.over===exI ? "ring-2 ring-sky-500" : ""} ${isActive ? "ring-2 ring-sky-500 shadow-[0_0_15px_rgba(14,165,233,0.3)] bg-sky-900/10" : ""}`}>
-              <div className="flex justify-between items-start gap-4">
-                <div className="flex-1 min-w-0">
-                  <h3 onClick={() => { const nn = prompt("Rinomina esercizio", ex.name); if(nn){ const n=[...activeWorkout.exercises]; n[exI].name = nn.trim(); setActiveWorkout({...activeWorkout, exercises:n}); } }} className="text-[1.2rem] font-black uppercase text-white leading-tight break-words active:text-sky-300 cursor-pointer">{ex.name}</h3>
-                  {ex.originalName && (
-                    <p className="text-[10px] font-bold text-amber-500 mt-1 uppercase tracking-wider">Sostituisce: {ex.originalName}</p>
-                  )}
-                  {getLastPerformanceSummary(ex.name) && (
-                    <p className="text-[11px] font-bold text-sky-400 mt-0.5">{getLastPerformanceSummary(ex.name)}</p>
-                  )}
-                  <div className="flex items-center gap-2 mt-2">
-                    <div className="bg-black/40 inline-flex px-3 py-1.5 rounded-lg border border-white/5 items-center gap-2">
-                      <Icon name="clock" size={12} className="text-sky-400" />
-                      <input type="number" value={ex.rest} onChange={(e) => { const n = deepClone(activeWorkout.exercises); n[exI].rest = e.target.value; setActiveWorkout({...activeWorkout, exercises: n}); }} className="w-8 bg-transparent text-[11px] font-black text-white outline-none text-center" />
-                      <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">sec rest</span>
-                    </div>
-                    {getExerciseHistory(ex.name).length > 0 && (
-                      <button 
-                        onClick={() => setExpandedHistory(prev => ({...prev, [exI]: !prev[exI]}))}
-                        className={`bg-black/40 inline-flex px-3 py-1.5 rounded-lg border border-white/5 items-center gap-2 transition-colors ${expandedHistory[exI] ? 'bg-sky-500/20 border-sky-500/30' : ''}`}
-                      >
-                        <Icon name="history" size={12} className={expandedHistory[exI] ? "text-sky-400" : "text-gray-400"} />
-                        <span className={`text-[10px] font-extrabold uppercase tracking-wider ${expandedHistory[exI] ? "text-sky-400" : "text-gray-400"}`}>Storico</span>
-                      </button>
+      <div className="flex flex-col gap-4 text-left">
+        {(() => {
+          const groups: { items: { ex: any, exI: number }[], isSuperset: boolean }[] = [];
+          if (activeWorkout?.exercises) {
+            let currentGroup: { ex: any, exI: number }[] = [];
+            activeWorkout.exercises.forEach((ex: any, exI: number) => {
+              if (currentGroup.length === 0) {
+                currentGroup.push({ ex, exI });
+              } else {
+                const prevEx = currentGroup[0].ex;
+                if (ex.supersetId && ex.supersetId === prevEx.supersetId) {
+                  currentGroup.push({ ex, exI });
+                } else {
+                  groups.push({ items: currentGroup, isSuperset: currentGroup.length > 1 });
+                  currentGroup = [{ ex, exI }];
+                }
+              }
+            });
+            if (currentGroup.length > 0) groups.push({ items: currentGroup, isSuperset: currentGroup.length > 1 });
+          }
+
+          const renderExerciseCard = (ex: any, exI: number, insideSuperset: boolean) => {
+            const isCompleted = ex.sets.every((s: any) => s.d);
+            const isActive = !isCompleted && (exI === 0 || activeWorkout.exercises.slice(0, exI).every((prevEx: any) => prevEx.sets.every((s: any) => s.d)));
+            
+            return (
+              <div key={exI} ref={(el)=>{exCardRefs.current[exI]=el;}} className={`p-5 transition-all duration-300 relative ${dragUI.active && dragUI.over===exI ? "ring-2 ring-sky-500" : ""} ${isActive ? "ring-2 ring-sky-500 shadow-[0_0_15px_rgba(14,165,233,0.3)] bg-sky-900/10" : ""} ${insideSuperset ? 'bg-[#151518] rounded-[2rem] shadow-none h-full' : 'surface-card rounded-3xl shadow-lg'}`}>
+                <div className="flex justify-between items-start gap-2 mb-4">
+                  <div className="flex-1 min-w-0 pr-1">
+                    <h3 onClick={() => { const nn = prompt("Rinomina esercizio", ex.name); if(nn){ const n=[...activeWorkout.exercises]; n[exI].name = nn.trim(); setActiveWorkout({...activeWorkout, exercises:n}); } }} className="text-[1.2rem] font-black uppercase text-white leading-tight break-words active:text-sky-300 cursor-pointer">{ex.name}</h3>
+                    {ex.originalName && (
+                      <p className="text-[10px] font-bold text-amber-500 mt-1 uppercase tracking-wider">Sostituisce: {ex.originalName}</p>
                     )}
-                    <button 
-                      onClick={() => setModal({ type: 'exercise-select', target: 'replace', exIndex: exI, originalName: ex.originalName })}
-                      className="bg-black/40 inline-flex px-3 py-1.5 rounded-lg border border-white/5 items-center gap-2 transition-colors active:bg-sky-500/20"
-                    >
-                      <Icon name="refresh-cw" size={12} className="text-sky-400" />
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-sky-400">Sostituisci</span>
-                    </button>
+                    {getLastPerformanceSummary(ex.name) && (
+                      <p className="text-[11px] font-bold text-sky-400 mt-0.5">{getLastPerformanceSummary(ex.name)}</p>
+                    )}
+                    
+                    <div className="flex items-center flex-wrap gap-1.5 mt-3">
+                        <div className="bg-black/40 inline-flex px-2 py-1.5 rounded-lg border border-white/5 items-center gap-1">
+                        <Icon name="clock" size={12} className="text-sky-400 shrink-0" />
+                        <input type="number" value={ex.rest} onChange={(e) => { const n = deepClone(activeWorkout.exercises); n[exI].rest = e.target.value; setActiveWorkout({...activeWorkout, exercises: n}); }} className="w-8 bg-transparent text-[11px] font-black text-white outline-none text-center" />
+                        <span className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider shrink-0">sec</span>
+                      </div>
+                      {getExerciseHistory(ex.name).length > 0 && (
+                        <button 
+                          onClick={() => setExpandedHistory(prev => ({...prev, [exI]: !prev[exI]}))}
+                          className={`bg-black/40 inline-flex px-2 py-1.5 rounded-lg border border-white/5 items-center gap-1 transition-colors ${expandedHistory[exI] ? 'bg-sky-500/20 border-sky-500/30' : ''}`}
+                        >
+                          <Icon name="history" size={12} className={`shrink-0 ${expandedHistory[exI] ? 'text-sky-400' : 'text-gray-400'}`} />
+                          <span className={`text-[9px] font-extrabold uppercase tracking-wider shrink-0 ${expandedHistory[exI] ? 'text-sky-400' : 'text-gray-400'}`}>Storico</span>
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => setModal({ type: 'exercise-select', target: 'replace', exIndex: exI, originalName: ex.originalName })}
+                        className="bg-black/40 inline-flex px-2 py-1.5 rounded-lg border border-white/5 items-center gap-1 transition-colors active:bg-sky-500/20"
+                      >
+                        <Icon name="refresh-cw" size={12} className="text-sky-400 shrink-0" />
+                        <span className="text-[9px] font-extrabold uppercase tracking-wider text-sky-400 shrink-0">Sostituisci</span>
+                      </button>
+                    </div>
+
+                  </div>
+                  <div className="flex flex-col gap-2 shrink-0">
+                    <button onClick={() => { const n = activeWorkout.exercises.filter((_: any, i: number) => i !== exI); setActiveWorkout({...activeWorkout, exercises: n}); }} className="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 active:bg-red-500/30 shrink-0"><Icon name="trash-2" size={18}/></button>
+                    <button onPointerDown={onDragPointerDown(exI)} className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 touch-none active:bg-white/10 cursor-grab shrink-0"><Icon name="grip-horizontal" size={18}/></button>
                   </div>
                 </div>
-                <div className="flex flex-col items-center gap-2">
-                  <button onClick={() => { const n = activeWorkout.exercises.filter((_: any, i: number) => i !== exI); setActiveWorkout({...activeWorkout, exercises: n}); }} className="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 active:bg-red-500/30 shrink-0"><Icon name="trash-2" size={18}/></button>
-                  <button onPointerDown={onDragPointerDown(exI)} className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 touch-none active:bg-white/10 cursor-grab shrink-0"><Icon name="grip-horizontal" size={18}/></button>
-                </div>
-              </div>
 
-              {expandedHistory[exI] && (
-                <div className="bg-black/30 rounded-2xl p-4 border border-white/5 space-y-3 animate-in fade-in slide-in-from-top-2">
-                  <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-sky-400 mb-2">Ultime sessioni</h4>
-                  {getExerciseHistory(ex.name).map((hw: any, hwI: number) => {
-                    const hex = hw.exercises.find((e: any) => (e.name || '').trim().toLowerCase() === (ex.name || '').trim().toLowerCase());
-                    if (!hex) return null;
+                {expandedHistory[exI] && (
+                  <div className="bg-black/30 rounded-2xl p-4 border border-white/5 space-y-3 animate-in fade-in slide-in-from-top-2 mb-4">
+                    <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-sky-400 mb-2">Ultime sessioni</h4>
+                    {getExerciseHistory(ex.name).map((hw: any, hwI: number) => {
+                      const hex = hw.exercises.find((e: any) => (e.name || '').trim().toLowerCase() === (ex.name || '').trim().toLowerCase());
+                      if (!hex) return null;
+                      return (
+                        <div key={hwI} className="flex flex-col gap-1 border-b border-white/5 pb-2 last:border-0 last:pb-0">
+                          <span className="text-[10px] font-bold text-gray-500">{new Date(hw.date).toLocaleDateString('it-IT', {day:'2-digit', month:'short', year:'numeric'})}</span>
+                          <div className="flex flex-wrap gap-2">
+                            {hex.sets.map((hs: any, hsI: number) => (
+                              <span key={hsI} className={`text-[11px] font-bold px-2 py-1 rounded bg-white/5 ${hs.w ? 'text-amber-400/70' : 'text-gray-300'}`}>
+                                {hs.kg || '-'}kg x {hs.reps || '-'}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                
+                <div className="mb-4">
+                  <NoteArea initialValue={ex.notes} onCommit={(v) => updateExNote(exI, v)} ghost={getGhostExerciseNotes(ex.name) || "Note (es. Focus eccentrica)..."} />
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="grid grid-cols-12 gap-2 text-[10px] font-extrabold text-gray-500 text-center uppercase tracking-widest px-1">
+                    <span className="col-span-1">S</span>
+                    <span className="col-span-3">KG</span>
+                    <span className="col-span-2">Rip</span>
+                    <span className="col-span-4 text-left pl-2">Note</span>
+                    <span className="col-span-2">Esito</span>
+                  </div>
+                  {ex.sets.map((s: any, sI: number) => {
+                    const setGhost = getGhostSet(ex.name, sI);
                     return (
-                      <div key={hwI} className="flex flex-col gap-1 border-b border-white/5 pb-2 last:border-0 last:pb-0">
-                        <span className="text-[10px] font-bold text-gray-500">{new Date(hw.date).toLocaleDateString('it-IT', {day:'2-digit', month:'short', year:'numeric'})}</span>
-                        <div className="flex flex-wrap gap-2">
-                          {hex.sets.map((hs: any, hsI: number) => (
-                            <span key={hsI} className={`text-[11px] font-bold px-2 py-1 rounded bg-white/5 ${hs.w ? 'text-amber-400/70' : 'text-gray-300'}`}>
-                              {hs.kg || '-'}kg x {hs.reps || '-'}
-                            </span>
-                          ))}
+                      <div key={sI} className={`grid grid-cols-12 gap-2 items-center transition-opacity duration-300 ${s.d ? 'opacity-50' : 'opacity-100'}`}>
+                        <div className="col-span-1 flex flex-col items-center gap-1">
+                            <span className="text-[14px] font-black text-sky-400">{sI+1}</span>
+                            <button onClick={() => { const n = deepClone(activeWorkout.exercises); n[exI].sets[sI].w = !n[exI].sets[sI].w; setActiveWorkout({...activeWorkout, exercises: n}); }} className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${s.w ? 'bg-amber-500/20 text-amber-400' : 'bg-gray-800 text-gray-500'}`}>{s.w ? 'W' : 'A'}</button>
+                        </div>
+                        <div className="col-span-3"><EtherInput ghost={setGhost?.kg} initialValue={s.kg} onCommit={(v) => updateSetData(exI, sI, 'kg', v)} /></div>
+                        <div className="col-span-2"><EtherInput ghost={setGhost?.reps} initialValue={s.reps} onCommit={(v) => updateSetData(exI, sI, 'reps', v)} /></div>
+                        <div className="col-span-4"><NoteArea ghost={setGhost?.note} initialValue={s.note} onCommit={(v) => updateSetData(exI, sI, 'note', v)} className="!text-[11px] !py-2.5" /></div>
+                        <div className="col-span-2 flex items-center justify-between gap-1">
+                            <button onClick={() => handleSetDone(exI, sI)} className={`check-box flex-1 !h-10 ${s.d ? 'checked' : ''}`}><Icon name="check" size={18} className={s.d ? 'text-white' : 'opacity-0'} /></button>
                         </div>
                       </div>
                     );
                   })}
                 </div>
-              )}
-              
-              <NoteArea initialValue={ex.notes} onCommit={(v) => updateExNote(exI, v)} ghost={getGhostExerciseNotes(ex.name) || "Note (es. Focus eccentrica)..."} />
-              
-              <div className="space-y-3">
-                <div className="grid grid-cols-12 gap-2 text-[10px] font-extrabold text-gray-500 text-center uppercase tracking-widest px-1">
-                  <span className="col-span-1">S</span>
-                  <span className="col-span-3">KG</span>
-                  <span className="col-span-2">Rip</span>
-                  <span className="col-span-4 text-left pl-2">Note</span>
-                  <span className="col-span-2">Esito</span>
+                <div className="flex gap-2 mt-4 pt-1">
+                    <button onClick={() => { const n = deepClone(activeWorkout.exercises); const last = n[exI].sets[n[exI].sets.length-1] || {kg:'', reps:'', w:false}; n[exI].sets.push({kg: last.kg, reps: '', note: '', w: last.w, d:false}); setActiveWorkout({...activeWorkout, exercises: n}); }} className="flex-1 py-3 bg-white/5 rounded-2xl text-[11px] font-extrabold uppercase border border-white/10 active:bg-white/10 text-gray-300 tracking-wider">+ Serie</button>
+                    <button onClick={() => removeSet(exI, ex.sets.length-1)} className="w-14 py-3 bg-white/5 rounded-2xl text-[11px] font-extrabold border border-white/10 active:bg-red-500/20 text-gray-400 flex items-center justify-center">-</button>
                 </div>
-                {ex.sets.map((s: any, sI: number) => {
-                  const setGhost = getGhostSet(ex.name, sI);
-                  return (
-                    <div key={sI} className={`grid grid-cols-12 gap-2 items-center transition-opacity duration-300 ${s.d ? 'opacity-50' : 'opacity-100'}`}>
-                      <div className="col-span-1 flex flex-col items-center gap-1">
-                          <span className="text-[14px] font-black text-sky-400">{sI+1}</span>
-                          <button onClick={() => { const n = deepClone(activeWorkout.exercises); n[exI].sets[sI].w = !n[exI].sets[sI].w; setActiveWorkout({...activeWorkout, exercises: n}); }} className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${s.w ? 'bg-amber-500/20 text-amber-400' : 'bg-gray-800 text-gray-500'}`}>{s.w ? 'W' : 'A'}</button>
-                      </div>
-                      <div className="col-span-3"><EtherInput ghost={setGhost?.kg} initialValue={s.kg} onCommit={(v) => updateSetData(exI, sI, 'kg', v)} /></div>
-                      <div className="col-span-2"><EtherInput ghost={setGhost?.reps} initialValue={s.reps} onCommit={(v) => updateSetData(exI, sI, 'reps', v)} /></div>
-                      <div className="col-span-4"><NoteArea ghost={setGhost?.note} initialValue={s.note} onCommit={(v) => updateSetData(exI, sI, 'note', v)} className="!text-[11px] !py-2.5" /></div>
-                      <div className="col-span-2 flex items-center justify-between gap-1">
-                          <button onClick={() => handleSetDone(exI, sI)} className={`check-box flex-1 !h-10 ${s.d ? 'checked' : ''}`}><Icon name="check" size={18} className={s.d ? 'text-white' : 'opacity-0'} /></button>
-                      </div>
+              </div>
+            );
+          };
+
+          return groups.map((g, gIdx) => {
+            const firstExI = g.items[0].exI;
+            return (
+              <React.Fragment key={`group-${gIdx}`}>
+                {gIdx > 0 && (
+                  <div className="flex justify-center relative z-10 shrink-0 -my-2 opacity-100">
+                    <button onClick={() => setActiveWorkout({...activeWorkout, exercises: toggleSupersetAction(firstExI, false, activeWorkout.exercises)})} 
+                      className="w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all bg-[#000000] border-white/10 text-gray-600 active:bg-white/5">
+                      <Icon name="link" size={14} />
+                    </button>
+                  </div>
+                )}
+                {g.isSuperset ? (
+                  <div className="surface-card p-3 rounded-[2.5rem] shadow-lg border border-amber-500/20 bg-amber-900/5">
+                    <div className="flex items-center gap-2 mb-2 px-3 pt-1">
+                      <Icon name="link" size={14} className="text-amber-500" />
+                      <span className="text-[11px] font-black uppercase text-amber-500 tracking-widest">Superset</span>
+                      <div className="flex-1 border-b border-amber-500/20" />
                     </div>
-                  );
-                })}
-              </div>
-              <div className="flex gap-2">
-                  <button onClick={() => { const n = deepClone(activeWorkout.exercises); const last = n[exI].sets[n[exI].sets.length-1] || {kg:'', reps:'', w:false}; n[exI].sets.push({kg: last.kg, reps: '', note: '', w: last.w, d:false}); setActiveWorkout({...activeWorkout, exercises: n}); }} className="flex-1 py-3 bg-white/5 rounded-2xl text-[11px] font-extrabold uppercase border border-white/10 active:bg-white/10 text-gray-300 tracking-wider">+ Serie</button>
-                  <button onClick={() => removeSet(exI, ex.sets.length-1)} className="w-14 py-3 bg-white/5 rounded-2xl text-[11px] font-extrabold border border-white/10 active:bg-red-500/20 text-gray-400 flex items-center justify-center">-</button>
-              </div>
-            </div>
-          );
-        })}
+                    <div className="flex overflow-x-auto snap-x snap-mandatory pb-2 -mx-1 px-1 items-center" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                      {g.items.map(({ex, exI}, i) => (
+                        <React.Fragment key={exI}>
+                          {i > 0 && (
+                            <div className="w-12 shrink-0 flex items-center justify-center relative z-10 snap-center">
+                              <button onClick={() => setActiveWorkout({...activeWorkout, exercises: toggleSupersetAction(exI, true, activeWorkout.exercises)})}
+                                className="w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all bg-amber-500 border-[#151518] text-black shadow-[0_0_10px_rgba(245,158,11,0.4)] active:scale-95">
+                                <Icon name="link" size={14} />
+                              </button>
+                            </div>
+                          )}
+                          <div className="w-[88%] shrink-0 snap-center relative">
+                            {renderExerciseCard(ex, exI, true)}
+                          </div>
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full">
+                    {renderExerciseCard(g.items[0].ex, g.items[0].exI, false)}
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          });
+        })()}
       </div>
       <button onClick={() => setModal({ type: 'exercise-select', mode: 'active', routineExs: [] })} className="w-full bg-[#131316] border-2 border-dashed border-white/15 py-12 flex flex-col items-center gap-4 text-gray-400 rounded-[2.5rem] active:bg-white/5 transition-all">
         <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center"><Icon name="plus" size={32} className="text-sky-400" /></div>

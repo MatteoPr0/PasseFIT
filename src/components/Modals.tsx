@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Icon } from './ui/Icon';
-import { genId } from '../utils';
+import { genId, deepClone, toggleSupersetAction } from '../utils';
 import { INITIAL_LIB } from '../constants';
 
 export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
@@ -13,8 +13,8 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
   const safeAddExerciseToRoutine = (rId: string, name: string) => setRoutines((prev: any) => (prev || []).map((r: any) => {
     if(String(r.id) !== String(rId)) return r;
     const exs = Array.isArray(r.exs) ? r.exs : [];
-    if(exs.some(n => String(n).toLowerCase() === String(name).toLowerCase())) return r; 
-    return { ...r, exs: [...exs, name] };
+    if(exs.some(n => typeof n === 'string' ? String(n).toLowerCase() === String(name).toLowerCase() : String(n.name).toLowerCase() === String(name).toLowerCase())) return r; 
+    return { ...r, exs: [...exs, { name }] };
   }));
 
   const safeAddExerciseToActive = (name: string) => setActiveWorkout((prev: any) => {
@@ -66,18 +66,89 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
               <p className="text-gray-400 text-[13px] font-bold">Nessun esercizio presente.<br/>Costruisci la tua scheda.</p>
             </div>
           )}
-          {(r.exs || []).map((ex: string, i: number) => (
-            <div key={i} className="surface-card p-4 rounded-[1.5rem] flex items-center gap-3 shadow-lg">
-              <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-500 font-black text-[10px] shrink-0">{i+1}</div>
-              <span className="text-white font-bold text-[13px] uppercase truncate flex-1">{ex}</span>
-              <button onClick={() => {
-                setRoutines((prev: any) => (prev || []).map((x: any) => {
-                  if(String(x.id) !== String(r.id)) return x;
-                  return { ...x, exs: (x.exs || []).filter((_: any, idx: number) => idx !== i) };
-                }));
-              }} className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-400 active:bg-red-500/30 shrink-0"><Icon name="trash-2" size={16} /></button>
-            </div>
-          ))}
+          
+          <div className="flex flex-col gap-4">
+          {(() => {
+            const normalizedExs = (r.exs || []).map((e: any) => typeof e === 'string' ? { name: e } : e);
+            const routineExGroups: { items: { ex: any, i: number }[], isSuperset: boolean }[] = [];
+            let currentRGroup: { ex: any, i: number }[] = [];
+            
+            normalizedExs.forEach((ex: any, i: number) => {
+                if (currentRGroup.length === 0) {
+                    currentRGroup.push({ ex, i });
+                } else {
+                    const prevEx = currentRGroup[0].ex;
+                    if (ex.supersetId && ex.supersetId === prevEx.supersetId) {
+                        currentRGroup.push({ ex, i });
+                    } else {
+                        routineExGroups.push({ items: currentRGroup, isSuperset: currentRGroup.length > 1 });
+                        currentRGroup = [{ ex, i }];
+                    }
+                }
+            });
+            if (currentRGroup.length > 0) routineExGroups.push({ items: currentRGroup, isSuperset: currentRGroup.length > 1 });
+
+            return routineExGroups.map((group, groupIdx) => {
+              const firstI = group.items[0].i;
+              return (
+                  <React.Fragment key={groupIdx}>
+                      {groupIdx > 0 && (
+                          <div className="flex justify-center relative z-10 shrink-0 -my-2 opacity-100">
+                              <button onClick={() => setRoutines((prev: any) => prev.map((x: any) => x.id === r.id ? { ...x, exs: toggleSupersetAction(firstI, false, normalizedExs) } : x))} 
+                                className="w-8 h-8 rounded-full flex items-center justify-center border-[3px] bg-[#000000] border-white/10 text-gray-600 active:bg-white/5 transition-all">
+                                <Icon name="link" size={14} />
+                              </button>
+                          </div>
+                      )}
+                      {group.isSuperset ? (
+                          <div className="surface-card p-3 rounded-[2rem] shadow-lg border border-amber-500/30 bg-amber-900/10">
+                              <div className="flex items-center gap-2 mb-2 px-2 pt-1">
+                                  <Icon name="link" size={14} className="text-amber-500" />
+                                  <span className="text-[10px] font-black uppercase text-amber-500 tracking-widest">Superset</span>
+                                  <div className="flex-1 border-b border-amber-500/20" />
+                              </div>
+                              <div className="flex flex-col gap-2">
+                                  {group.items.map(({ex, i}, idx) => (
+                                      <div key={i} className="relative">
+                                          {idx > 0 && (
+                                              <div className="absolute -top-4 left-6 flex justify-center w-6 h-6 z-10">
+                                                <button onClick={() => setRoutines((prev: any) => prev.map((x: any) => x.id === r.id ? { ...x, exs: toggleSupersetAction(i, true, normalizedExs) } : x))}
+                                                  className="w-6 h-6 rounded-full flex items-center justify-center border-[2px] bg-amber-500 border-[#1C1C21] text-black shadow-[0_0_10px_rgba(245,158,11,0.4)] transition-transform active:scale-95">
+                                                  <Icon name="link" size={10} />
+                                                </button>
+                                              </div>
+                                          )}
+                                          <div className="bg-[#131316] p-4 rounded-[1.2rem] flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-500 font-black text-[10px] shrink-0">{i+1}</div>
+                                            <span className="text-white font-bold text-[13px] uppercase truncate flex-1">{ex.name}</span>
+                                            <button onClick={() => {
+                                              setRoutines((prev: any) => (prev || []).map((x: any) => {
+                                                if(String(x.id) !== String(r.id)) return x;
+                                                return { ...x, exs: (x.exs || []).filter((_: any, idx: number) => idx !== i) };
+                                              }));
+                                            }} className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-400 active:bg-red-500/30 shrink-0"><Icon name="trash-2" size={16} /></button>
+                                          </div>
+                                      </div>
+                                  ))}
+                              </div>
+                          </div>
+                      ) : (
+                          <div className="surface-card p-4 rounded-[1.5rem] flex items-center gap-3 shadow-lg">
+                            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-500 font-black text-[10px] shrink-0">{group.items[0].i+1}</div>
+                            <span className="text-white font-bold text-[13px] uppercase truncate flex-1">{group.items[0].ex.name}</span>
+                            <button onClick={() => {
+                              setRoutines((prev: any) => (prev || []).map((x: any) => {
+                                if(String(x.id) !== String(r.id)) return x;
+                                return { ...x, exs: (x.exs || []).filter((_: any, idx: number) => idx !== group.items[0].i) };
+                              }));
+                            }} className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-400 active:bg-red-500/30 shrink-0"><Icon name="trash-2" size={16} /></button>
+                          </div>
+                      )}
+                  </React.Fragment>
+              );
+            });
+          })()}
+          </div>
           
           <button onClick={(e) => { e.preventDefault(); setModal({ type: 'exercise-select', target: 'routine', data: r.id }); }} className="w-full bg-[#131316] border-2 border-dashed border-sky-500/30 py-8 flex flex-col items-center gap-2 text-sky-400 rounded-[2rem] active:bg-sky-500/10 transition-all mt-4">
             <Icon name="plus" size={24} />

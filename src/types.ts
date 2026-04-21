@@ -12,6 +12,7 @@ export interface ExerciseData {
   originalName?: string;
   notes?: string;
   sets: SetData[];
+  supersetId?: string;
 }
 
 export interface WorkoutData {
