@@ -31,6 +31,60 @@ export default function App() {
   const timerEndTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (window.location.hash) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  }, []);
+
+  useEffect(() => {
+    const hasModal = !!modal?.type;
+    const isHome = activeTabState === 'home';
+    
+    let desiredHash = '';
+    if (hasModal) desiredHash = '#modal';
+    else if (!isHome) desiredHash = '#tab';
+
+    const currentHash = window.location.hash;
+
+    if (desiredHash !== currentHash) {
+      if (
+        (desiredHash === '#modal' && currentHash === '#tab') ||
+        (desiredHash === '#tab' && currentHash === '') ||
+        (desiredHash === '#modal' && currentHash === '')
+      ) {
+        window.history.pushState(null, '', desiredHash);
+      } else {
+        window.history.back();
+      }
+    }
+  }, [activeTabState, modal?.type]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const currentHash = window.location.hash;
+      const hasModal = !!modal?.type;
+      const isHome = activeTabState === 'home';
+
+      let actualDesiredHash = '';
+      if (hasModal) actualDesiredHash = '#modal';
+      else if (!isHome) actualDesiredHash = '#tab';
+
+      if (currentHash !== actualDesiredHash) {
+        if (hasModal) {
+          setModal({ type: null });
+        } else if (!isHome) {
+          if (currentHash === '') {
+            setActiveTab('home');
+          }
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [modal?.type, activeTabState]);
+
+  useEffect(() => {
     const playBeep = () => {
       try {
         const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
