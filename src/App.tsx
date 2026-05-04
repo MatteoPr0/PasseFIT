@@ -29,6 +29,7 @@ export default function App() {
   const [isTimerOpen, setIsTimerOpen] = useState(false);
   const [timerVal, setTimerVal] = useState(0);
   const timerEndTimeRef = useRef<number | null>(null);
+  const baseHashBeforeModal = useRef<string | null>(null);
 
   useEffect(() => {
     if (window.location.hash) {
@@ -46,6 +47,10 @@ export default function App() {
 
     const currentHash = window.location.hash;
 
+    if (hasModal && currentHash !== '#modal') {
+      baseHashBeforeModal.current = currentHash;
+    }
+
     if (desiredHash !== currentHash) {
       if (
         (desiredHash === '#modal' && currentHash === '#tab') ||
@@ -53,6 +58,15 @@ export default function App() {
         (desiredHash === '#modal' && currentHash === '')
       ) {
         window.history.pushState(null, '', desiredHash);
+      } else if (currentHash === '#modal' && !hasModal) {
+        // We are closing a modal.
+        if (desiredHash !== baseHashBeforeModal.current) {
+          // Tab changed while modal was open (e.g. started workout from home)
+          window.history.replaceState(null, '', desiredHash);
+        } else {
+          // Normal modal close
+          window.history.back();
+        }
       } else {
         window.history.back();
       }
