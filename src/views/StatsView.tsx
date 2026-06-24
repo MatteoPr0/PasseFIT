@@ -105,7 +105,8 @@ export const StatsView = ({ store, setModal }: any) => {
     
     history.filter((h: any) => (h.startTime || Date.parse(h.date)) > thirtyDaysAgo).forEach((h: any) => {
       (h.exercises || []).forEach((ex: any) => {
-        const cat = muscleMap[ex.name.toLowerCase()] || 'Altro';
+        const exName = (ex && ex.name) ? String(ex.name).trim().toLowerCase() : '';
+        const cat = exName ? (muscleMap[exName] || 'Altro') : 'Altro';
         const validSets = (ex.sets || []).filter((s: any) => s.d).length;
         if (validSets > 0) {
           counts[cat] = (counts[cat] || 0) + validSets;

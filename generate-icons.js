@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 const svgPath = './public/pwa-512x512.svg';
+const out180 = './public/pwa-180x180.png';
 const out192 = './public/pwa-192x192.png';
 const out512 = './public/pwa-512x512.png';
 
@@ -10,6 +11,11 @@ async function generateIcons() {
   try {
     const svgBuffer = fs.readFileSync(svgPath);
     
+    await sharp(svgBuffer)
+      .resize(180, 180)
+      .png()
+      .toFile(out180);
+
     await sharp(svgBuffer)
       .resize(192, 192)
       .png()

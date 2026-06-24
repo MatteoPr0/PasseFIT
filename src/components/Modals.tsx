@@ -408,6 +408,7 @@ export const Modals = ({ modal, setModal, store, setActiveTab }: any) => {
                     originalName: e.originalName,
                     rest: e.rest || 90,
                     notes: "",
+                    supersetId: e.supersetId,
                     sets: Array.from({ length: Math.max(1, (e.sets || []).length) }, () => ({ kg: '', reps: '', note: '', w: false, d: false }))
                   }))
                 };

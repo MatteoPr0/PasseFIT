@@ -32,10 +32,13 @@ export default function App() {
   const baseHashBeforeModal = useRef<string | null>(null);
 
   useEffect(() => {
-    if (window.location.hash) {
-      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    if (store.isAuthReady && window.location.hash) {
+      const currentHash = window.location.hash;
+      if (store.user || (currentHash !== '#modal' && currentHash !== '#tab')) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
     }
-  }, []);
+  }, [store.isAuthReady, store.user]);
 
   useEffect(() => {
     const hasModal = !!modal?.type;
@@ -76,6 +79,7 @@ export default function App() {
   useEffect(() => {
     const handlePopState = () => {
       const currentHash = window.location.hash;
+
       const hasModal = !!modal?.type;
       const isHome = activeTabState === 'home';
 
@@ -132,22 +136,24 @@ export default function App() {
           playBeep();
           
           if ('Notification' in window && Notification.permission === 'granted') {
+            const pathOffset = window.location.pathname.endsWith('/') ? window.location.pathname : window.location.pathname + '/';
+            const dynamicIconUrl = pathOffset + 'pwa-192x192.png';
             try {
               new Notification('PasseFIT', {
                 body: 'Tempo di recupero terminato! Preparati per la prossima serie.',
-                icon: '/PasseFIT/pwa-192x192.png',
+                icon: dynamicIconUrl,
                 vibrate: [200, 100, 200, 100, 200, 100, 400],
                 requireInteraction: true
-              });
+              } as any);
             } catch (e) {
               if (navigator.serviceWorker) {
                 navigator.serviceWorker.ready.then(registration => {
                   registration.showNotification('PasseFIT', {
                     body: 'Tempo di recupero terminato! Preparati per la prossima serie.',
-                    icon: '/PasseFIT/pwa-192x192.png',
+                    icon: dynamicIconUrl,
                     vibrate: [200, 100, 200, 100, 200, 100, 400],
                     requireInteraction: true
-                  });
+                  } as any);
                 });
               }
             }

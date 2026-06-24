@@ -60,7 +60,14 @@ export const HomeView = ({ store, setActiveTab, setModal }: any) => {
   const startWorkout = (r: any = null) => {
     setActiveWorkout({
       id: genId(), name: r ? r.name : "Sessione Libera", date: new Date().toISOString(), startTime: Date.now(),
-      exercises: r ? (r.exs || []).map((e: any) => ({ name: (typeof e === 'string' ? e : e?.name || ''), rest: 90, notes: "", sets: [{ kg: '', reps: '', note: '', w: false, d: false }] })) : []
+      exercises: r ? (r.exs || []).map((e: any) => ({
+        name: (typeof e === 'string' ? e : e?.name || ''),
+        originalName: (typeof e === 'object' ? e?.originalName : undefined),
+        supersetId: (typeof e === 'object' ? e?.supersetId : undefined),
+        rest: 90,
+        notes: "",
+        sets: [{ kg: '', reps: '', note: '', w: false, d: false }]
+      })) : []
     });
     setActiveTab('workout');
     if (!r) setModal({ type: 'exercise-select', mode: 'active', routineExs: [] });
@@ -70,7 +77,7 @@ export const HomeView = ({ store, setActiveTab, setModal }: any) => {
     <div className="space-y-6 view-animate pt-8">
       <header className="sticky top-0 z-50 flex justify-between items-center px-2 py-4 -mx-2 bg-[#000000]/80 backdrop-blur-xl rounded-b-3xl">
         <div className="pl-2">
-          <p className="text-sky-400 text-[10px] font-extrabold uppercase tracking-[0.3em]">v1.0-passefit</p>
+          <p className="text-sky-400 text-[10px] font-extrabold uppercase tracking-[0.3em]">v2.0-passefit</p>
           <h1 className="text-[2.5rem] font-black tracking-tight mt-1 text-white">PasseFIT</h1>
         </div>
         <div className="w-14 h-14 surface-card flex items-center justify-center rounded-[1.2rem] shadow-2xl mr-2">

@@ -9,12 +9,16 @@ export const LoginView = () => {
   const handleLogin = async () => {
     setError('');
     const provider = new GoogleAuthProvider();
+
     try {
+      // Use signInWithPopup which is fully supported and works natively without redirect loops or third-party cookie restrictions
       await signInWithPopup(auth, provider);
     } catch (error: any) {
       console.error("Errore durante il login:", error);
       if (error.code === 'auth/unauthorized-domain') {
         setError(`Dominio non autorizzato. Devi aggiungere "${window.location.hostname}" ai domini autorizzati nella console di Firebase (Authentication > Settings > Authorized domains).`);
+      } else if (error.code === 'auth/popup-blocked') {
+        setError("Il pop-up di accesso è stato bloccato dal browser. Consenti i popup per questa pagina e riprova.");
       } else {
         setError(`Errore: ${error.message || "Riprova più tardi."}`);
       }

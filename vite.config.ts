@@ -6,14 +6,17 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
+  const isGithubPages = process.env.GITHUB_ACTIONS === 'true' || env.GITHUB_ACTIONS === 'true';
+  const appBase = isGithubPages ? '/PasseFIT/' : '/';
+
   return {
-    base: '/PasseFIT/',
+    base: appBase,
     plugins: [
       react(), 
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['pwa-192x192.png', 'pwa-512x512.png', 'pwa-512x512.svg'],
+        includeAssets: ['pwa-180x180.png', 'pwa-192x192.png', 'pwa-512x512.png', 'pwa-512x512.svg'],
         manifest: {
           name: 'PasseFIT',
           short_name: 'PasseFIT',
@@ -21,8 +24,8 @@ export default defineConfig(({mode}) => {
           theme_color: '#050505',
           background_color: '#050505',
           display: 'standalone',
-          start_url: '/PasseFIT/',
-          scope: '/PasseFIT/',
+          start_url: appBase,
+          scope: appBase,
           orientation: 'portrait',
           icons: [
             {
